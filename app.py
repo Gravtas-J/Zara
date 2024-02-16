@@ -13,6 +13,8 @@ from langchain.vectorstores import FAISS
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
+
+st.set_page_config(layout="wide")
 # Adding the current date and time at the top of the chatlog
 def append_date_time_to_chatlog():
     with open(Chatlog_loc, "r+") as chatlog_file:
@@ -80,7 +82,7 @@ Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
 Journal_loc = os.path.join('Memories', 'Journal.txt')
 Persona=os.path.join('Personas', 'Zara.md')
 userprofile=os.path.join('Memories', 'user_profile.txt')
-portrait_path = os.path.join('Portrait', 'Zara.png')
+portrait_path = os.path.join('Portrait', 'T.png')
 Thinker_loc = os.path.join('system prompts', 'Thinker.md')
 prompt = st.chat_input()
 Profile_update = open_file(Update_user)
@@ -110,7 +112,7 @@ if "Journal" not in st.session_state:
             open(Journal_loc, "w").close()
         
         with open(Journal_loc, "a") as Journal_file:  # Changed mode to "a" for appending to the end
-            Journal_file.write(Update_Journal + "\n\n\n")
+            Journal_file.write("\n\n" + Update_Journal + "\n\n\n")
 
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
@@ -145,11 +147,11 @@ if "timestamp" not in st.session_state:
     append_date_time_to_chatlog()
     st.session_state['timestamp'] = 'done'
 
-if st.sidebar.button("Clear History"):
-    # Reset the messages list and chat_log string
-    st.session_state['messages'] = []
-    st.session_state["chat_log"] = ""
-    st.rerun()  # Rerun the app to reflect changes
+# if st.sidebar.button("Clear History"):
+#     # Reset the messages list and chat_log string
+#     st.session_state['messages'] = []
+#     st.session_state["chat_log"] = ""
+#     st.rerun()  # Rerun the app to reflect changes
 # Initialize or ensure the 'messages' list is in the session state for storing chat messages.
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
@@ -164,6 +166,10 @@ for msg in st.session_state.messages:
         # For user messages, display as usual
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
+
+#============================CHATBOT FUNCTION =====================================#
+
+
 if prompt:
     with open('Journal_embedded.pkl', 'rb') as f:
         loaded_KB = pickle.load(f)
@@ -182,7 +188,7 @@ if prompt:
         "content": Content  + memory
     }
     messages_for_api = [system_prompt] + st.session_state.messages
-    
+     
     # Call the OpenAI API with the prepared messages, including the hidden system prompt.
     response = openai.ChatCompletion.create(
         model="gpt-4-turbo-preview",
