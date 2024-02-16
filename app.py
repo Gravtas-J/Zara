@@ -75,6 +75,8 @@ def append_to_chatlog(message):
 load_dotenv()
 
 ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
+ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
+ensure_userprofile_exists(os.path.join('Memories', 'Journal.txt'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 Update_user = os.path.join('system prompts', 'User_update.md')
 Journaler = os.path.join('system prompts', 'Journaler.md')
@@ -84,6 +86,7 @@ Persona=os.path.join('Personas', 'Zara.md')
 userprofile=os.path.join('Memories', 'user_profile.txt')
 portrait_path = os.path.join('Portrait', 'T.png')
 Thinker_loc = os.path.join('system prompts', 'Thinker.md')
+embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
 prompt = st.chat_input()
 Profile_update = open_file(Update_user)
 persona_content = open_file(Persona)
@@ -120,7 +123,6 @@ if "Journal" not in st.session_state:
 #============================EMBEDDING FUNCTION =====================================#
 if "embed" not in st.session_state:
     st.session_state["embed"] = "done"
-    Journal_loc = os.path.join('Memories', 'Journal.txt')
     with open(Journal_loc, 'r') as file:
         journal_content = file.read()
 
@@ -138,8 +140,8 @@ if "embed" not in st.session_state:
     KB = FAISS.from_texts(chunks, embeddings)
 
     # Construct pickle file name based on Journal.txt, but without specific naming convention here
-    pickle_file_name = 'Journal_embedded.pkl'
-    with open(pickle_file_name, 'wb') as f:
+    # pickle_file_name = 'Journal_embedded.pkl'
+    with open(embed_loc, 'wb') as f:
         pickle.dump(KB, f)
 
 
