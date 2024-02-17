@@ -246,7 +246,7 @@ if prompt:
         "content": Content  + memory
     }
     messages_for_api = [system_prompt] + st.session_state.messages
-     
+    
     # Call the OpenAI API with the prepared messages, including the hidden system prompt.
     response = client.chat.completions.create(model="gpt-4", messages=messages_for_api,stream=False)
     msg_content = response.choices[0].message.content
