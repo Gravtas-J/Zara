@@ -8,7 +8,7 @@ from PIL import Image
 from datetime import datetime, timedelta
 import time
 import pickle
-from langchain_openai import OpenAIEmbeddings
+# from langchain_openai import OpenAIEmbeddings
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.text_splitter import CharacterTextSplitter
@@ -32,7 +32,16 @@ def ensure_userprofile_exists(filepath):
         with open(filepath, 'w', encoding='utf-8') as f:
             # You can initialize the file with default content if necessary
             f.write('')  # Write an empty string or initial content
-        
+
+def ensure_Journal_exists(filepath):
+    # Check if the file exists
+    if not os.path.exists(filepath):
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        # Create the file since it doesn't exist
+        with open(filepath, 'w', encoding='utf-8') as f:
+            # You can initialize the file with default content if necessary
+            f.write('Journal Start')  # Write an empty string or initial content
 
         
 
@@ -77,7 +86,7 @@ load_dotenv()
 
 ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
-ensure_userprofile_exists(os.path.join('Memories', 'Journal.txt'))
+ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 Update_user = os.path.join('system prompts', 'User_update.md')
 Journaler = os.path.join('system prompts', 'Journaler.md')
