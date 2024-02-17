@@ -1,8 +1,4 @@
-Certainly! Here's a README template based on the provided code. You might want to adjust it further to fit your project's specific requirements, context, and setup instructions.
-
----
-
-# Project Title
+# Zara - Reactive Journal Companion 
 
 ## Description
 
