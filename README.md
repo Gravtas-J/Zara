@@ -27,6 +27,7 @@ This project is a Streamlit-based web application that leverages OpenAI's GPT mo
 2. Install the required Python packages:
    ```
    pip install -r requirements.txt
+   python -m spacy download en_core_web_md
    ```
 3. Create a `.env` file at the root of the project directory, and add your OpenAI API key:
    ```

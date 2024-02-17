@@ -1,20 +1,17 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os
-from openai import OpenAI
+import openai
 from time import time
 from dotenv import load_dotenv
 from datetime import datetime
 import time
-import sqlite3
-import spacy
-import pandas as pd
-
-
-nlp = spacy.load("en_core_web_md")  # Make sure to use a model with word vectors
-chromadb_path = os.path.join('chromadb', 'chromaDB.db')
-
-
+import pickle
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.llms import OpenAI
+from langchain.chains.question_answering import load_qa_chain
 
 st.set_page_config(layout="wide")
 # Adding the current date and time at the top of the chatlog
@@ -49,15 +46,16 @@ def open_file(filepath):
         return infile.read()
     
 def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
-    response = client.chat.completions.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response.choices[0].message.content
-    return text, response.usage.total_tokens
+    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
+    text = response['choices'][0]['message']['content']
+    return text, response['usage']['total_tokens']
 
 def chatbotGPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
-    response = client.chat.completions.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response.choices[0].message.content
-    return text, response.usage.total_tokens
+    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
+    text = response['choices'][0]['message']['content']
+    return text, response['usage']['total_tokens']
 
+# Streamed response emulator for a dynamic chat experience
 def response_generator(msg_content):
     for word in msg_content.split():
         yield word + " "
@@ -73,42 +71,6 @@ def append_to_chatlog(message):
     with open(Chatlog_loc, "a") as chatlog_file:
         chatlog_file.write(message + "\n")
 
-
-def fetch_journal_entries():
-    """Fetch all journal entries from the database."""
-    conn = sqlite3.connect(chromadb_path)
-    query = "SELECT id, date, content FROM journal_entries"
-    df = pd.read_sql_query(query, conn)
-    conn.close()
-    # print(f"Fetched {len(df)} entries")  # Debug print
-    return df
-
-def calculate_similarity(user_prompt, entries):
-    # """Calculate similarity between user prompt and journal entries using spaCy and return top result."""
-    # if entries.empty:
-    #     print("Entries dataframe is empty")  # Debug print
-    #     return ""
-    
-    # Calculate similarity
-    prompt_doc = nlp(user_prompt)
-    entries['similarity'] = entries['content'].apply(lambda x: prompt_doc.similarity(nlp(x)))
-    
-    # Sort the entries based on similarity
-    sorted_entries = entries.sort_values(by='similarity', ascending=False)
-    
-    # # Debug print to check similarities of top entries
-    # print(sorted_entries[['content', 'similarity']].head()) 
-    
-    # Extract the content of the most similar entry
-    if not sorted_entries.empty:
-        memory = sorted_entries.iloc[0]['content']
-    else:
-        memory = ""
-    
-    return memory
-
-
-
 #=================================================================#
 
 load_dotenv()
@@ -116,7 +78,7 @@ load_dotenv()
 ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
 ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
-OpenAI.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 Update_user = os.path.join('system prompts', 'User_update.md')
 Journaler = os.path.join('system prompts', 'Journaler.md')
 Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
@@ -126,11 +88,6 @@ userprofile=os.path.join('Memories', 'user_profile.txt')
 portrait_path = os.path.join('Portrait', 'T.png')
 Thinker_loc = os.path.join('system prompts', 'Thinker.md')
 embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
-
-
-client = OpenAI()
-
-
 prompt = st.chat_input()
 Profile_update = open_file(Update_user)
 persona_content = open_file(Persona)
@@ -138,8 +95,6 @@ User_pro = open_file(userprofile)
 Content = persona_content + User_pro
 Profile_check = Profile_update+User_pro
 
-
-os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 #============================JOURNALING FUNCTION =====================================#
 
 if "Journal" not in st.session_state:
@@ -150,8 +105,8 @@ if "Journal" not in st.session_state:
         # st.write(Prev_Chatlog)
         Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
         # st.write(Journal)
-        response = client.chat.completions.create(model="gpt-3.5-turbo-0125", messages=Journal, stream= False, temperature=0, max_tokens=4000)
-        text = response.choices[0].message.content
+        response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Journal, temperature=0, max_tokens=4000)
+        text = response['choices'][0]['message']['content']
         # st.write(Update_Journal)
         Update_Journal = text
         
@@ -161,53 +116,33 @@ if "Journal" not in st.session_state:
             open(Journal_loc, "w").close()
         
         with open(Journal_loc, "a") as Journal_file:  # Changed mode to "a" for appending to the end
-            Journal_file.write("\n" + Update_Journal)
+            Journal_file.write("\n\n" + Update_Journal + "\n\n\n")
 
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
 
 #============================EMBEDDING FUNCTION =====================================#
 if "embed" not in st.session_state:
+    st.session_state["embed"] = "done"
+    with open(Journal_loc, 'r') as file:
+        journal_content = file.read()
 
-    # Connect to the SQLite database (this will create the database if it does not exist)
-    conn = sqlite3.connect(chromadb_path)
-    cursor = conn.cursor()
+    # Text splitting process
+    text_splitter = CharacterTextSplitter(
+        separator="\n",
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len
+    )
+    chunks = text_splitter.split_text(journal_content)
 
-    # Create a table to store journal entries if it doesn't exist
-    cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
-        id INTEGER PRIMARY KEY,
-        date TEXT,
-        content TEXT
-    )""")
+    # Embedding the data
+    embeddings = OpenAIEmbeddings()  
+    KB = FAISS.from_texts(chunks, embeddings)
 
-    # Clear the table to ensure the database will only contain the latest entries
-    cursor.execute("DELETE FROM journal_entries")
-
-    # Open the journal file and read its content
-    with open(Journal_loc, 'r', encoding='utf-8') as file:
-        content = file.read()
-
-    # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
-    entries_raw = content.strip().split('\n\n')
-
-    entries = []
-    for entry_raw in entries_raw:
-        parts = entry_raw.split('\n', 2)  # Split into 3 parts: date, title, and content
-        if len(parts) == 3:
-            date, title, content = parts
-        else:
-            # Handle potential formatting issues or incomplete entries
-            # print(f"Skipping incomplete entry: {parts[0]}")
-            continue
-
-        entries.append((date, title, content))
-
-    # Insert the parsed journal entries into the database
-    cursor.executemany("INSERT INTO journal_entries (date, title, content) VALUES (?, ?, ?)", entries)
-
-    # Commit changes and close the connection
-    conn.commit()
-    conn.close()
+    # Construct pickle file name based on Journal.txt
+    with open(embed_loc, 'wb') as f:
+        pickle.dump(KB, f)
 
 
 if "timestamp" not in st.session_state:
@@ -232,9 +167,12 @@ for msg in st.session_state.messages:
 
 
 if prompt:
-    # print("Search button pressed")  # Debug print
-    entries = fetch_journal_entries()
-    memory = calculate_similarity(prompt, entries)
+    with open(embed_loc, 'rb') as f:
+        loaded_KB = pickle.load(f)
+    docs = loaded_KB.similarity_search(prompt)
+    llm = OpenAI(model= "gpt-3.5-turbo-instruct",max_tokens=2000)
+    chain = load_qa_chain(llm, chain_type="stuff")
+    memory = chain.run(input_documents=docs, question=prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user message in chat message container
     with st.chat_message("user",):
@@ -248,8 +186,11 @@ if prompt:
     messages_for_api = [system_prompt] + st.session_state.messages
      
     # Call the OpenAI API with the prepared messages, including the hidden system prompt.
-    response = client.chat.completions.create(model="gpt-4", messages=messages_for_api,stream=False)
-    msg_content = response.choices[0].message.content
+    response = openai.ChatCompletion.create(
+        model="gpt-4-turbo-preview",
+        messages=messages_for_api
+    )
+    msg_content = response.choices[0].message["content"]
     
     # Display assistant response in chat message container with streamed output
     with st.chat_message("assistant", avatar=portrait_path):

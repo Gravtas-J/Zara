@@ -1,7 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os
-from openai import OpenAI
+import openai
 from time import time
 from dotenv import load_dotenv
 from datetime import datetime
@@ -13,7 +13,6 @@ import pandas as pd
 
 nlp = spacy.load("en_core_web_md")  # Make sure to use a model with word vectors
 chromadb_path = os.path.join('chromadb', 'chromaDB.db')
-
 
 
 st.set_page_config(layout="wide")
@@ -49,14 +48,14 @@ def open_file(filepath):
         return infile.read()
     
 def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
-    response = client.chat.completions.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response.choices[0].message.content
-    return text, response.usage.total_tokens
+    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
+    text = response['choices'][0]['message']['content']
+    return text, response['usage']['total_tokens']
 
 def chatbotGPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
-    response = client.chat.completions.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response.choices[0].message.content
-    return text, response.usage.total_tokens
+    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
+    text = response['choices'][0]['message']['content']
+    return text, response['usage']['total_tokens']
 
 def response_generator(msg_content):
     for word in msg_content.split():
@@ -97,7 +96,7 @@ def calculate_similarity(user_prompt, entries):
     sorted_entries = entries.sort_values(by='similarity', ascending=False)
     
     # # Debug print to check similarities of top entries
-    # print(sorted_entries[['content', 'similarity']].head()) 
+    print(sorted_entries[['content', 'similarity']].head()) 
     
     # Extract the content of the most similar entry
     if not sorted_entries.empty:
@@ -116,7 +115,7 @@ load_dotenv()
 ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
 ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
-OpenAI.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 Update_user = os.path.join('system prompts', 'User_update.md')
 Journaler = os.path.join('system prompts', 'Journaler.md')
 Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
@@ -128,7 +127,7 @@ Thinker_loc = os.path.join('system prompts', 'Thinker.md')
 embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
 
 
-client = OpenAI()
+
 
 
 prompt = st.chat_input()
@@ -150,8 +149,8 @@ if "Journal" not in st.session_state:
         # st.write(Prev_Chatlog)
         Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
         # st.write(Journal)
-        response = client.chat.completions.create(model="gpt-3.5-turbo-0125", messages=Journal, stream= False, temperature=0, max_tokens=4000)
-        text = response.choices[0].message.content
+        response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Journal, temperature=0, max_tokens=4000)
+        text = response['choices'][0]['message']['content']
         # st.write(Update_Journal)
         Update_Journal = text
         
@@ -168,7 +167,7 @@ if "Journal" not in st.session_state:
 
 #============================EMBEDDING FUNCTION =====================================#
 if "embed" not in st.session_state:
-
+    st.session_state['Journal'] = 'done'
     # Connect to the SQLite database (this will create the database if it does not exist)
     conn = sqlite3.connect(chromadb_path)
     cursor = conn.cursor()
@@ -235,6 +234,13 @@ if prompt:
     # print("Search button pressed")  # Debug print
     entries = fetch_journal_entries()
     memory = calculate_similarity(prompt, entries)
+    # if not similar_entries.empty:
+    #     print(f"Displaying {len(similar_entries)} similar entries")  # Debug print
+    #     for _, row in similar_entries.iterrows():
+    #         st.write(f"**Date:** {row['date']}")
+    #         st.write(f"**Content:** {row['content']}")
+    # else:
+    #     st.write("No entries found.")
     st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user message in chat message container
     with st.chat_message("user",):
@@ -248,8 +254,11 @@ if prompt:
     messages_for_api = [system_prompt] + st.session_state.messages
      
     # Call the OpenAI API with the prepared messages, including the hidden system prompt.
-    response = client.chat.completions.create(model="gpt-4", messages=messages_for_api,stream=False)
-    msg_content = response.choices[0].message.content
+    response = openai.ChatCompletion.create(
+        model="gpt-4-turbo-preview",
+        messages=messages_for_api
+    )
+    msg_content = response.choices[0].message["content"]
     
     # Display assistant response in chat message container with streamed output
     with st.chat_message("assistant", avatar=portrait_path):

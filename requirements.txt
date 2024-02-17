@@ -1,4 +1,8 @@
-openai==0.28
+openai
 langchain==0.0.306
 stremalit
 python-dotenv
+tiktoken 
+pandas
+spacy
+

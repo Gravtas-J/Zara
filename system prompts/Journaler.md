@@ -19,12 +19,12 @@ If there is no conversation log and only a time and date give an space as output
 - Reflect on the session, considering what worked well and what could be improved.
 - Anticipate potential areas for further exploration, possible challenges, or adjustments in therapeutic techniques based on the session's insights.
 - If there is no conversation log do not respond.
+- Do not have linebreaks in the body of the jounral entry 
 
 # OUTPUT FORMAT
 Observe the following Journal entry format:
 
 ```
 <date> <time>
-
 Today, I interacted with <user's name>. Our discussion focused on <main subject of the conversation>. For instance, they mentioned that <specific details about the subject from the conversation>.
 ``` 
