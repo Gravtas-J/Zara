@@ -4,11 +4,9 @@ import os
 import openai
 from time import time
 from dotenv import load_dotenv
-from PIL import Image
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
 import pickle
-# from langchain_openai import OpenAIEmbeddings
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.text_splitter import CharacterTextSplitter
@@ -43,8 +41,6 @@ def ensure_Journal_exists(filepath):
             # You can initialize the file with default content if necessary
             f.write('Journal Start')  # Write an empty string or initial content
 
-        
-
 def open_file(filepath):
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
         return infile.read()
@@ -53,7 +49,6 @@ def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
     response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
     text = response['choices'][0]['message']['content']
     return text, response['usage']['total_tokens']
-
 
 def chatbotGPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
     response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
@@ -75,10 +70,6 @@ def append_to_chatlog(message):
     
     with open(Chatlog_loc, "a") as chatlog_file:
         chatlog_file.write(message + "\n")
-
-
-
-# Ensure date and time is appended at the beginning of the chatlog file
 
 #=================================================================#
 
@@ -146,11 +137,10 @@ if "embed" not in st.session_state:
     chunks = text_splitter.split_text(journal_content)
 
     # Embedding the data
-    embeddings = OpenAIEmbeddings()  # Placeholder for the actual embedding process
+    embeddings = OpenAIEmbeddings()  
     KB = FAISS.from_texts(chunks, embeddings)
 
-    # Construct pickle file name based on Journal.txt, but without specific naming convention here
-    # pickle_file_name = 'Journal_embedded.pkl'
+    # Construct pickle file name based on Journal.txt
     with open(embed_loc, 'wb') as f:
         pickle.dump(KB, f)
 
@@ -159,12 +149,6 @@ if "timestamp" not in st.session_state:
     append_date_time_to_chatlog()
     st.session_state['timestamp'] = 'done'
 
-# if st.sidebar.button("Clear History"):
-#     # Reset the messages list and chat_log string
-#     st.session_state['messages'] = []
-#     st.session_state["chat_log"] = ""
-#     st.rerun()  # Rerun the app to reflect changes
-# Initialize or ensure the 'messages' list is in the session state for storing chat messages.
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 if "chat_log" not in st.session_state:
