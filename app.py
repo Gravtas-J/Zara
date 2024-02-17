@@ -8,6 +8,7 @@ from PIL import Image
 from datetime import datetime, timedelta
 import time
 import pickle
+from langchain_openai import OpenAIEmbeddings
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.text_splitter import CharacterTextSplitter
@@ -173,7 +174,7 @@ for msg in st.session_state.messages:
 
 
 if prompt:
-    with open('Journal_embedded.pkl', 'rb') as f:
+    with open(embed_loc, 'rb') as f:
         loaded_KB = pickle.load(f)
     docs = loaded_KB.similarity_search(prompt)
     llm = OpenAI(model= "gpt-3.5-turbo-instruct",max_tokens=2000)
