@@ -161,7 +161,7 @@ if "Journal" not in st.session_state:
             open(Journal_loc, "w").close()
         
         with open(Journal_loc, "a") as Journal_file:  # Changed mode to "a" for appending to the end
-            Journal_file.write("\n" + Update_Journal)
+            Journal_file.write("\n" + Update_Journal + "\n")
 
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
@@ -230,11 +230,12 @@ for msg in st.session_state.messages:
 
 #============================CHATBOT FUNCTION =====================================#
 
-
+st.sidebar.title("I will display the most relevent memory I have here:")
 if prompt:
     # print("Search button pressed")  # Debug print
     entries = fetch_journal_entries()
     memory = calculate_similarity(prompt, entries)
+    st.sidebar.write(memory)
     st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user message in chat message container
     with st.chat_message("user",):
