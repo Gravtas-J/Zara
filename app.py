@@ -149,7 +149,7 @@ if "Journal" not in st.session_state:
         # st.write(Prev_Chatlog)
         Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
         # st.write(Journal)
-        response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Journal, temperature=0, max_tokens=4000)
+        response = openai.ChatCompletion.create(model="gpt-4", messages=Journal, temperature=0, max_tokens=4000)
         text = response['choices'][0]['message']['content']
         # st.write(Update_Journal)
         Update_Journal = text
@@ -234,6 +234,7 @@ if prompt:
     # print("Search button pressed")  # Debug print
     entries = fetch_journal_entries()
     memory = calculate_similarity(prompt, entries)
+    st.sidebar.write(memory)
     # if not similar_entries.empty:
     #     print(f"Displaying {len(similar_entries)} similar entries")  # Debug print
     #     for _, row in similar_entries.iterrows():
@@ -255,7 +256,7 @@ if prompt:
      
     # Call the OpenAI API with the prepared messages, including the hidden system prompt.
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-0125",
+        model="gpt-4",
         messages=messages_for_api
     )
     msg_content = response.choices[0].message["content"]

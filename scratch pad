@@ -1,4 +1,4 @@
-add a system that checks length of chatlog, after ceratin length is reached run journaling function and clear chatlog. 
+add a system that checks length of chatlog, after ceratin length is reached clip the chatlog. 
 
 add system to add multiple users and contextualise the journaling function with which user profile is loaded. 
 
