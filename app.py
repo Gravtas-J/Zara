@@ -192,17 +192,17 @@ if "embed" not in st.session_state:
     entries = []
     for entry_raw in entries_raw:
         parts = entry_raw.split('\n', 2)  # Split into 3 parts: date, title, and content
-        if len(parts) == 3:
-            date, title, content = parts
+        if len(parts) == 2:
+            date, content = parts
         else:
             # Handle potential formatting issues or incomplete entries
             # print(f"Skipping incomplete entry: {parts[0]}")
             continue
 
-        entries.append((date, title, content))
+        entries.append((date, content))
 
     # Insert the parsed journal entries into the database
-    cursor.executemany("INSERT INTO journal_entries (date, title, content) VALUES (?, ?, ?)", entries)
+    cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
 
     # Commit changes and close the connection
     conn.commit()
