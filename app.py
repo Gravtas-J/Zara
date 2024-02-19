@@ -100,7 +100,7 @@ def calculate_similarity(user_prompt, entries):
     
     # Extract the content of the most similar entry
     if not sorted_entries.empty:
-        memory = sorted_entries.iloc[0]['content']
+        memory = f"{sorted_entries.iloc[0]['date']}\n{sorted_entries.iloc[0]['content']}"
     else:
         memory = ""
     
@@ -180,7 +180,7 @@ os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 
 if "Journal" not in st.session_state:
     st.session_state['Journal'] = "done"
-    write_journal
+    write_journal()
 
 #============================EMBEDDING FUNCTION =====================================#
 if "embed" not in st.session_state:
@@ -295,6 +295,10 @@ if prompt:
     # Append the latest user and assistant messages to the chatlog file
     append_to_chatlog(f"User: {prompt}")
     append_to_chatlog(f"Assistant: {msg_content}")
+    current_Chatlog = open_file(Chatlog_loc)
+    if len(current_Chatlog) > 2500:
+        write_journal()
+        append_date_time_to_chatlog()
 
 
 
