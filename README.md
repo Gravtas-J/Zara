@@ -77,7 +77,6 @@ This project is a Streamlit-based web application that leverages OpenAI's GPT mo
 ### Configuration
 
 - **Environment Variables**: Ensure your OpenAI API key is stored in the `.env` file.
-- **Directory Structure**: The application expects specific directories for `Memories`, `Personas`, `Portrait`, and `system prompts`. Make sure these exist and are structured as per the application's requirements.
 
 ## Usage
 
