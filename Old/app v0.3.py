@@ -9,12 +9,8 @@ import time
 import sqlite3
 import spacy
 import pandas as pd
-import faiss
-from sentence_transformers import SentenceTransformer, util
-import numpy as np
 
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
 nlp = spacy.load("en_core_web_md")  # Make sure to use a model with word vectors
 chromadb_path = os.path.join('chromadb', 'chromaDB.db')
 
@@ -86,34 +82,25 @@ def fetch_journal_entries():
     # print(f"Fetched {len(df)} entries")  # Debug print
     return df
 
-def create_faiss_index(embeddings):
-    # Dimension of embeddings
-    d = embeddings.shape[1]
-    
-    # Creating a FAISS index
-    index = faiss.IndexFlatL2(d)  # Using L2 distance for similarity search
-    
-    # Adding the embeddings to the index
-    index.add(embeddings)
-    
-    return index
-
 def calculate_similarity(user_prompt, entries):
-    # Convert user prompt and entries to embeddings
-    prompt_embedding = model.encode([user_prompt])
-    entry_embeddings = np.array(model.encode(entries['content'].tolist()))
+    # """Calculate similarity between user prompt and journal entries using spaCy and return top result."""
+    # if entries.empty:
+    #     print("Entries dataframe is empty")  # Debug print
+    #     return ""
     
-    # Create a FAISS index for the entry embeddings
-    index = create_faiss_index(entry_embeddings)
+    # Calculate similarity
+    prompt_doc = nlp(user_prompt)
+    entries['similarity'] = entries['content'].apply(lambda x: prompt_doc.similarity(nlp(x)))
     
-    # Search the index for the most similar entries
-    D, I = index.search(prompt_embedding, 1)  # Search for the top 1 closest entries
+    # Sort the entries based on similarity
+    sorted_entries = entries.sort_values(by='similarity', ascending=False)
     
-    # Get the most similar entry details
-    if len(I) > 0:
-        most_similar_entry_index = I[0][0]
-        most_similar_distance = D[0][0]
-        memory = f"{entries.iloc[most_similar_entry_index]['date']}\n{entries.iloc[most_similar_entry_index]['content']}"
+    # # Debug print to check similarities of top entries
+    print(sorted_entries[['content', 'similarity']].head()) 
+    
+    # Extract the content of the most similar entry
+    if not sorted_entries.empty:
+        memory = f"{sorted_entries.iloc[0]['date']}\n{sorted_entries.iloc[0]['content']}"
     else:
         memory = ""
     
@@ -262,9 +249,8 @@ for msg in st.session_state.messages:
 
 if prompt:
     # print("Search button pressed")  # Debug print
-    time_right_now = "current time:"+"\n"+datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     entries = fetch_journal_entries()
-    memory = "Memory" + "\n" + calculate_similarity(prompt, entries)
+    memory = calculate_similarity(prompt, entries)
     st.sidebar.write(memory)
     # if not similar_entries.empty:
     #     print(f"Displaying {len(similar_entries)} similar entries")  # Debug print
@@ -281,7 +267,7 @@ if prompt:
     # followed by the actual chat messages exchanged in the session.
     system_prompt = {
         "role": "system",
-        "content": time_right_now + Content  + memory
+        "content": Content  + memory
     }
     messages_for_api = [system_prompt] + st.session_state.messages
      

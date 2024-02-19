@@ -5,4 +5,7 @@ python-dotenv
 tiktoken 
 pandas
 spacy
+sentence_transformers
+numpy
+faiss
 
