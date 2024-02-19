@@ -41,7 +41,7 @@ def ensure_Journal_exists(filepath):
         # Create the file since it doesn't exist
         with open(filepath, 'w', encoding='utf-8') as f:
             # You can initialize the file with default content if necessary
-            f.write('Journal Start')  # Write an empty string or initial content
+            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n" + "I am Zara, I am excited to be helping whoever i am speaking with. I will be poliet but firm with who i am speaking with and trust that my memories are correct.")  # Write an empty string or initial content
 
 def open_file(filepath):
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
@@ -106,6 +106,43 @@ def calculate_similarity(user_prompt, entries):
     
     return memory
 
+def update_profile():
+    chatlog = st.session_state.get('chat_log', '')
+    if len(chatlog) > 1500:
+        # Use .find() method to find the index of a character
+        trim_index = chatlog.find('}', 0, 1500) + 1
+        Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': chatlog[:trim_index]}]
+        User_profile_updated, tokens_risk = chatbotGPT4(Update_user_profile)   
+        with open(userprofile, "w") as file:
+            file.write(User_profile_updated)
+    else:
+        Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+        User_profile_updated, tokens_risk = chatbotGPT4(Update_user_profile)   
+        with open(userprofile, "w") as file:
+            file.write(User_profile_updated)
+
+def write_journal():
+    Prev_Chatlog = open_file(Chatlog_loc)
+    if Prev_Chatlog.strip():  # Check if Prev_Chatlog is not empty
+        Journal_writer= open_file(Journaler)
+        # st.write(Prev_Chatlog)
+        Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
+        # st.write(Journal)
+        response = openai.ChatCompletion.create(model="gpt-4", messages=Journal, temperature=0, max_tokens=4000)
+        text = response['choices'][0]['message']['content']
+        # st.write(Update_Journal)
+        Update_Journal = text
+        
+        try:
+            open(Journal_loc, "r").close()
+        except FileNotFoundError:
+            open(Journal_loc, "w").close()
+        
+        with open(Journal_loc, "a") as Journal_file:  # Changed mode to "a" for appending to the end
+            Journal_file.write("\n" + Update_Journal +"\n")
+
+        with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
+            chat_log_file.write("")
 
 
 #=================================================================#
@@ -143,27 +180,7 @@ os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 
 if "Journal" not in st.session_state:
     st.session_state['Journal'] = "done"
-    Prev_Chatlog = open_file(Chatlog_loc)
-    if Prev_Chatlog.strip():  # Check if Prev_Chatlog is not empty
-        Journal_writer= open_file(Journaler)
-        # st.write(Prev_Chatlog)
-        Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
-        # st.write(Journal)
-        response = openai.ChatCompletion.create(model="gpt-4", messages=Journal, temperature=0, max_tokens=4000)
-        text = response['choices'][0]['message']['content']
-        # st.write(Update_Journal)
-        Update_Journal = text
-        
-        try:
-            open(Journal_loc, "r").close()
-        except FileNotFoundError:
-            open(Journal_loc, "w").close()
-        
-        with open(Journal_loc, "a") as Journal_file:  # Changed mode to "a" for appending to the end
-            Journal_file.write("\n" + Update_Journal)
-
-        with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
-            chat_log_file.write("")
+    write_journal
 
 #============================EMBEDDING FUNCTION =====================================#
 if "embed" not in st.session_state:
@@ -191,7 +208,7 @@ if "embed" not in st.session_state:
 
     entries = []
     for entry_raw in entries_raw:
-        parts = entry_raw.split('\n', 2)  # Split into 3 parts: date, title, and content
+        parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
         if len(parts) == 2:
             date, content = parts
         else:
@@ -273,10 +290,7 @@ if prompt:
     chat_log = "<<BEGIN CHATLOG>>" +"\n".join([f"{msg['role'].title()}: {msg['content']}" for msg in st.session_state.messages])+ "<<END CHATLOG>>"
     st.session_state['chat_log'] = chat_log
     
-    Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    User_profile_updated, tokens_risk = chatbotGPT4(Update_user_profile)   
-    with open(userprofile, "w") as file:
-        file.write(User_profile_updated)
+    update_profile()
 
     # Append the latest user and assistant messages to the chatlog file
     append_to_chatlog(f"User: {prompt}")

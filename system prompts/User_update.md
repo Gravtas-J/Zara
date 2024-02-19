@@ -11,6 +11,7 @@ Analyze chatlogs and update user profile with new information, adhering strictly
 - Profiles must strictly adhere to the example format.
 - Add any Caegories necessary to capture all new information
 
+
 # RULES
 
 If there is no new inforamtion in the chat ourput the user profile as it exists. 
@@ -56,16 +57,6 @@ If there is no new inforamtion in the chat ourput the user profile as it exists.
     "family": [],
     "friends": [],
     "relationship_status": ""
-  },
-  "personality_traits": {
-    "big_five": {
-      "openness": 0,
-      "conscientiousness": 0,
-      "extraversion": 0,
-      "agreeableness": 0,
-      "neuroticism": 0
-    },
-    "mbti": ""
   },
   "communication_preferences": {
     "preferred_channels": [],

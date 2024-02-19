@@ -62,7 +62,7 @@ db_path = 'e:/OneDrive/Documents/GitHub/WIP/Zara/chromadb/chromaDB.db'
 def fetch_journal_entries():
     """Fetch all journal entries from the database."""
     conn = sqlite3.connect(db_path)
-    query = "SELECT id, date, title, content FROM journal_entries"
+    query = "SELECT id, date, content FROM journal_entries"
     df = pd.read_sql_query(query, conn)
     conn.close()
     print(f"Fetched {len(df)} entries")  # Debug print
@@ -78,12 +78,21 @@ def calculate_similarity(user_prompt, entries):
     print(entries[['content', 'similarity']].head())  # Debug print to check similarities
     return entries.sort_values(by='similarity', ascending=False)
 
+def show_all_entries():
+    """Display all journal entries."""
+    entries = fetch_journal_entries()
+    if not entries.empty:
+        st.sidebar.write("All Journal Entries")
+        for _, row in entries.iterrows():
+            st.sidebar.write(f"**ID:** {row['id']}, **Date:** {row['date']}, **Content:** {row['content']}")
+
+
 # Streamlit UI
 st.title('Journal Entry Similarity Search')
 
 user_prompt = st.text_area("Enter your search prompt:", height=100)
 search_button = st.button("Search")
-
+st.sidebar.button("Show All Entries", on_click=show_all_entries)
 if search_button and user_prompt:
     print("Search button pressed")  # Debug print
     entries = fetch_journal_entries()
