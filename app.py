@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 import time
 import sqlite3
-import spacy
+# import spacy
 import pandas as pd
 import faiss
 from sentence_transformers import SentenceTransformer, util
@@ -15,7 +15,7 @@ import numpy as np
 
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
-nlp = spacy.load("en_core_web_md")  # Make sure to use a model with word vectors
+# nlp = spacy.load("en_core_web_md")  # Make sure to use a model with word vectors
 chromadb_path = os.path.join('chromadb', 'chromaDB.db')
 
 
