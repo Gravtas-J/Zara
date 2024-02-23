@@ -287,7 +287,7 @@ if prompt:
      
     # Call the OpenAI API with the prepared messages, including the hidden system prompt.
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-0125",
+        model="gpt-4",
         messages=messages_for_api
     )
     msg_content = response.choices[0].message["content"]
