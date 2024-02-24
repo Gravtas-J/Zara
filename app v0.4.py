@@ -56,7 +56,7 @@ def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
     text = response['choices'][0]['message']['content']
     return text, response['usage']['total_tokens']
 
-def chatbotGPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
+def chatbotGPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=10000):
     response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
     text = response['choices'][0]['message']['content']
     return text, response['usage']['total_tokens']
@@ -115,15 +115,24 @@ def calculate_similarity(user_prompt, entries):
         most_similar_distance = D[0][0]
         memory = f"{entries.iloc[most_similar_entry_index]['date']}\n{entries.iloc[most_similar_entry_index]['content']}"
     else:
-        memory = "You don't have any relevent memories."
+        memory = ""
     
     return memory
 
 def update_profile():
-    Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
-    with open(userprofile, "w") as file:
-        file.write(User_profile_updated)
+    chatlog = st.session_state.get('chat_log', '')
+    if len(chatlog) > 1500:
+        # Use .find() method to find the index of a character
+        trim_index = chatlog.find('}', 0, 1500) + 1
+        Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': chatlog[:trim_index]}]
+        User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
+        with open(userprofile, "w") as file:
+            file.write(User_profile_updated)
+    else:
+        Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+        User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
+        with open(userprofile, "w") as file:
+            file.write(User_profile_updated)
 
 def write_journal():
     Prev_Chatlog = open_file(Chatlog_loc)
@@ -278,7 +287,7 @@ if prompt:
      
     # Call the OpenAI API with the prepared messages, including the hidden system prompt.
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-0125",
+        model="gpt-4",
         messages=messages_for_api
     )
     msg_content = response.choices[0].message["content"]
@@ -296,6 +305,7 @@ if prompt:
     st.session_state['chat_log'] = chat_log
     
     update_profile()
+
     # Append the latest user and assistant messages to the chatlog file
     append_to_chatlog(f"User: {prompt}")
     append_to_chatlog(f"Assistant: {msg_content}")
