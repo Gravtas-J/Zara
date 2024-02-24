@@ -120,36 +120,17 @@ def calculate_similarity(user_prompt, entries):
     return memory
 
 def update_profile():
-    # chatlog = st.session_state.get('chat_log', '')
-    # if len(chatlog) > 2500:
-        # Use .find() method to find the index of a character
-        # trim_index = chatlog.find('}', 0, 2500) + 1
-        user_message = "User message:" + prompt
-        Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': user_message}]
-        User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
-        with open(userprofile, "w") as file:
-            file.write(User_profile_updated)
-    # else:
-    #     Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    #     User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
-    #     with open(userprofile, "w") as file:
-    #         file.write(User_profile_updated)
+    Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+    User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
+    with open(userprofile, "w") as file:
+        file.write(User_profile_updated)
     
 
 def update_matrix():
-    # chatlog = st.session_state.get('chat_log', '')
-    # if len(chatlog) > 2500:
-    #     # Use .find() method to find the index of a character
-    #     trim_index = chatlog.find('}', 0, 2500) + 1
-        Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': prompt}]
-        Matrix_updated, tokens_risk = chatbotGPT3(Update_Person_matrix)   
-        with open(User_matrix, "w") as file:
-            file.write(Matrix_updated)
-    # else:
-    #     Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    #     Matrix_updated, tokens_risk = chatbotGPT4(Update_Person_matrix)   
-    #     with open(User_matrix, "w") as file:
-    #         file.write(Matrix_updated)
+    Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+    Matrix_updated, tokens_risk = chatbotGPT4(Update_Person_matrix)   
+    with open(User_matrix, "w") as file:
+        file.write(Matrix_updated)
 
 
 def write_journal():
