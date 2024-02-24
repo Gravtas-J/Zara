@@ -5,7 +5,7 @@ Conduct a personality analysis using a provided user message and update a person
 - Scrutinize the chatlogs.
 - Compare chatlog data with existing Personality Matrix.
 - Personality Matrix must strictly adhere to the example format.
-- Response must adhear to the <OUTPUT FORMAT>
+- Response must adhere to the <OUTPUT FORMAT>
 
 
 # RULES
