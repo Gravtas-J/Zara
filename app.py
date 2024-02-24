@@ -120,19 +120,37 @@ def calculate_similarity(user_prompt, entries):
     return memory
 
 def update_profile():
-    chatlog = st.session_state.get('chat_log', '')
-    if len(chatlog) > 1500:
+    # chatlog = st.session_state.get('chat_log', '')
+    # if len(chatlog) > 2500:
         # Use .find() method to find the index of a character
-        trim_index = chatlog.find('}', 0, 1500) + 1
-        Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': chatlog[:trim_index]}]
+        # trim_index = chatlog.find('}', 0, 2500) + 1
+        user_message = "User message:" + prompt
+        Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': user_message}]
         User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
         with open(userprofile, "w") as file:
             file.write(User_profile_updated)
-    else:
-        Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-        User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
-        with open(userprofile, "w") as file:
-            file.write(User_profile_updated)
+    # else:
+    #     Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+    #     User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
+    #     with open(userprofile, "w") as file:
+    #         file.write(User_profile_updated)
+    
+
+def update_matrix():
+    # chatlog = st.session_state.get('chat_log', '')
+    # if len(chatlog) > 2500:
+    #     # Use .find() method to find the index of a character
+    #     trim_index = chatlog.find('}', 0, 2500) + 1
+        Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': prompt}]
+        Matrix_updated, tokens_risk = chatbotGPT3(Update_Person_matrix)   
+        with open(User_matrix, "w") as file:
+            file.write(Matrix_updated)
+    # else:
+    #     Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+    #     Matrix_updated, tokens_risk = chatbotGPT4(Update_Person_matrix)   
+    #     with open(User_matrix, "w") as file:
+    #         file.write(Matrix_updated)
+
 
 def write_journal():
     Prev_Chatlog = open_file(Chatlog_loc)
@@ -165,6 +183,7 @@ load_dotenv()
 ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
 ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
+ensure_userprofile_exists(os.path.join('Memories', 'user_person_matrix.txt'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 Update_user = os.path.join('system prompts', 'User_update.md')
 Journaler = os.path.join('system prompts', 'Journaler.md')
@@ -175,8 +194,8 @@ userprofile=os.path.join('Memories', 'user_profile.txt')
 portrait_path = os.path.join('Portrait', 'T.png')
 Thinker_loc = os.path.join('system prompts', 'Thinker.md')
 embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
-
-
+User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
+Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
 
 
 
@@ -184,9 +203,11 @@ prompt = st.chat_input()
 Profile_update = open_file(Update_user)
 persona_content = open_file(Persona)
 User_pro = open_file(userprofile)
-Content = persona_content + User_pro
+Matrix_writer_content = open_file(Matrix_writer_prompt)
+Matrix_content = open_file(User_matrix)
+Matrix_writer = Matrix_writer_content + Matrix_content
+Content = persona_content + User_pro + Matrix_content
 Profile_check = Profile_update+User_pro
-
 
 os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 #============================JOURNALING FUNCTION =====================================#
@@ -261,18 +282,11 @@ for msg in st.session_state.messages:
 
 
 if prompt:
-    # print("Search button pressed")  # Debug print
     time_right_now = "current time:"+"\n"+datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     entries = fetch_journal_entries()
     memory = "Memory" + "\n" + calculate_similarity(prompt, entries)
     st.sidebar.write(memory)
-    # if not similar_entries.empty:
-    #     print(f"Displaying {len(similar_entries)} similar entries")  # Debug print
-    #     for _, row in similar_entries.iterrows():
-    #         st.write(f"**Date:** {row['date']}")
-    #         st.write(f"**Content:** {row['content']}")
-    # else:
-    #     st.write("No entries found.")
+
     st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user message in chat message container
     with st.chat_message("user",):
@@ -287,7 +301,7 @@ if prompt:
      
     # Call the OpenAI API with the prepared messages, including the hidden system prompt.
     response = openai.ChatCompletion.create(
-        model="gpt-4",
+        model="gpt-3.5-turbo-0125",
         messages=messages_for_api
     )
     msg_content = response.choices[0].message["content"]
@@ -305,10 +319,12 @@ if prompt:
     st.session_state['chat_log'] = chat_log
     
     update_profile()
+    update_matrix()
 
     # Append the latest user and assistant messages to the chatlog file
     append_to_chatlog(f"User: {prompt}")
     append_to_chatlog(f"Assistant: {msg_content}")
+
     current_Chatlog = open_file(Chatlog_loc)
     if len(current_Chatlog) > 2500:
         write_journal()

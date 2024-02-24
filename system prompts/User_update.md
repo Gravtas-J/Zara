@@ -1,9 +1,13 @@
 # MISSION
-Analyze chatlogs and update user profile with new information, adhering strictly to the given profile format adding categories if one does not exist in the example provided, while maintaining all existing data.
+Analyze a user message and update user profile with new information, adhering strictly to the given profile format adding categories if one does not exist in the example provided, while maintaining all existing data.
+
+# RULES
+
+If there is no new inforamtion in the user message output the user profile as it exists. 
 
 # ACTIONS
-- Scrutinize the chatlogs.
-- Compare chatlog data with existing user profile.
+- Scrutinize the message.
+- Compare Message data with existing user profile.
 - Update user profile, retaining all original information.
 - If new data conflicts with existing data:
     - Overwrite if it is directly conflicting.
@@ -12,9 +16,6 @@ Analyze chatlogs and update user profile with new information, adhering strictly
 - Add any Caegories necessary to capture all new information
 
 
-# RULES
-
-If there is no new inforamtion in the chat ourput the user profile as it exists. 
 
 # FORMAT
 ```
