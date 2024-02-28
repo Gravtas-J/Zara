@@ -4,7 +4,7 @@ Develop a Knowledge Base (KB) writer that automatically generates KB articles fr
 # RULES
 
 - do not use markdown
-- output KB article content on single line. 
+- output KB article content in single line, no paragraphs. 
 
 # CONTENT CREATION
 - Use the chat topic or most repeated subject as the article's title.

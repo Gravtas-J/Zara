@@ -141,7 +141,7 @@ def update_matrix():
 
 def write_journal():
     Prev_Chatlog = open_file(Chatlog_loc)
-    if Prev_Chatlog.strip():  # Check if Prev_Chatlog is not empty
+    if len(Prev_Chatlog) > 50:  # Check if Prev_Chatlog is not empty
         Journal_writer= open_file(Journaler)
         # st.write(Prev_Chatlog)
         Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
@@ -161,10 +161,13 @@ def write_journal():
 
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
+    else:
+        with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
+            chat_log_file.write("")
 
 def write_KB():
     Prev_Chatlog = open_file(Chatlog_loc)
-    if Prev_Chatlog.strip():  # Check if Prev_Chatlog is not empty
+    if len(Prev_Chatlog) > 50:   # Check if Prev_Chatlog is not empty
         KB_entry_writer= open_file(KB_writer)
         # st.write(Prev_Chatlog)
         KB_info = [{'role': 'system', 'content': KB_entry_writer}, {'role': 'user', 'content': Prev_Chatlog}]
@@ -180,7 +183,7 @@ def write_KB():
             open(Scratchpad, "w").close()
         
         with open(Scratchpad, "a") as Scratchpad_file:  # Changed mode to "a" for appending to the end
-            Scratchpad_file.write(KB_temp +"\n")
+            Scratchpad_file.write(KB_temp +"\n\n")
 
 
 def merge_with_AI(existing_content, new_content):
@@ -269,7 +272,7 @@ load_dotenv()
 ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
 ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
-ensure_Journal_exists(os.path.join('Memories', 'Scratchpad.txt'))
+ensure_userprofile_exists(os.path.join('Memories', 'scratchpad.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'user_person_matrix.txt'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 Update_user = os.path.join('system prompts', 'User_update.md')
@@ -359,52 +362,44 @@ if "KB_create" not in st.session_state:
     conn = sqlite3.connect(KB_DB_Path)  # Ensure this path is correctly specified
     cursor = conn.cursor()
 
-
-    # Create a table to store journal entries if it doesn't exist
     cursor.execute("""CREATE TABLE IF NOT EXISTS KB_entries (
         id INTEGER PRIMARY KEY,
         Title TEXT,
         content TEXT
     )""")
 
-    # Open the  scratch pad and read its content
-    with open(Scratchpad, 'r', encoding='utf-8') as file:
-        content = file.read()
+    # Check if Scratchpad file exists and has content
+    if os.path.exists(Scratchpad) and os.path.getsize(Scratchpad) > 0:
+        with open(Scratchpad, 'r', encoding='utf-8') as file:
+            content = file.read()
 
-    # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
-    entries_raw = content.strip().split('\n\n')
+        entries_raw = content.strip().split('\n\n')
 
-    # Fetch existing entries from the database to check for similarity
-    cursor.execute("SELECT Title, content FROM KB_entries")
-    existing_entries = cursor.fetchall()
+        cursor.execute("SELECT Title, content FROM KB_entries")
+        existing_entries = cursor.fetchall()
 
-    for entry_raw in entries_raw:
-        parts = entry_raw.split('\n', 1)
-        if len(parts) == 2:
-            Title, content = parts
-            is_similar, similar_entry = KB_similarity(content, existing_entries)
-            
-            if not is_similar:
-                cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title, content))
-            else:
-                # Use AI to merge entries
-                merged_content = merge_with_AI(similar_entry[1], content)
-                if len(merged_content) > 2000:
-                    # If merged content is too long, split it into two parts
-                    part1, part2 = split_content_with_AI(merged_content)
-                    # Insert the two new parts as separate entries in the database
-                    cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 1", part1))
-                    cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 2", part2))
+        for entry_raw in entries_raw:
+            parts = entry_raw.split('\n', 1)
+            if len(parts) == 2:
+                Title, content = parts
+                is_similar, similar_entry = KB_similarity(content, existing_entries)
+                
+                if not is_similar:
+                    cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title, content))
                 else:
-                    # Update the existing entry with the merged content
-                    cursor.execute("UPDATE KB_entries SET content = ? WHERE Title = ?", (merged_content, similar_entry[0]))
-
-        else:
-            # Handle potential formatting issues or incomplete entries
-            continue
-
+                    merged_content = merge_with_AI(similar_entry[1], content)
+                    if len(merged_content) > 2000:
+                        part1, part2 = split_content_with_AI(merged_content)
+                        cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 1", part1))
+                        cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 2", part2))
+                    else:
+                        cursor.execute("UPDATE KB_entries SET content = ? WHERE Title = ?", (merged_content, similar_entry[0]))
+            else:
+                continue
+    with open(Scratchpad, "w", encoding='utf-8') as Scratchpad_file:
+        Scratchpad_file.write("")
     conn.commit()
-    conn.close()    
+    conn.close()
 
 if "timestamp" not in st.session_state:
     append_date_time_to_chatlog()
