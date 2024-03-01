@@ -33,7 +33,8 @@ def create_faiss_index(embeddings):
     index.add(embeddings)
     
     return index
-def calculate_similarity(user_prompt, entries, threshold=1.5):
+
+def calculate_similarity_close(user_prompt, entries, threshold=1.5):
     # Convert user prompt and entries to embeddings
     prompt_embedding = model.encode([user_prompt])
     entry_embeddings = np.array(model.encode(entries['content'].tolist()))
@@ -64,6 +65,33 @@ def calculate_similarity(user_prompt, entries, threshold=1.5):
     
     return similar_entries_df
 
+
+def calculate_similarity(user_prompt, entries):
+    # Convert user prompt and entries to embeddings
+    prompt_embedding = model.encode([user_prompt])
+    entry_embeddings = np.array(model.encode(entries['content'].tolist()))
+    
+    # Create a FAISS index for the entry embeddings
+    index = create_faiss_index(entry_embeddings)
+    
+    # Search the index for the top 5 most similar entries
+    D, I = index.search(prompt_embedding, 5)  # Search for the top 5 closest entries
+    
+    # Prepare the results
+    similar_entries = []
+    for i in range(0, len(I[0])):
+        idx = I[0][i]  # Index of the similar entry
+        distance = D[0][i]  # Similarity score (distance)
+        similar_entries.append({
+            'date': entries.iloc[idx]['date'],
+            'content': entries.iloc[idx]['content'],
+            'similarity_score': distance
+        })
+    
+    # Convert to DataFrame for easier handling
+    similar_entries_df = pd.DataFrame(similar_entries)
+    
+    return similar_entries_df
 
 
 def show_all_entries():

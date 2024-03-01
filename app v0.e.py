@@ -402,91 +402,12 @@ if "Journal" not in st.session_state:
 if "DB Jorunal" not in st.session_state:
     st.session_state['DB Jorunal'] = 'done'
     process_journal_entries(chromadb_path, Journal_loc)
-    # # Connect to the SQLite database (this will create the database if it does not exist)
-    # conn = sqlite3.connect(chromadb_path)
-    # cursor = conn.cursor()
-
-    # # Create a table to store journal entries if it doesn't exist
-    # cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
-    #     id INTEGER PRIMARY KEY,
-    #     date TEXT,
-    #     content TEXT
-    # )""")
-
-    # # Clear the table to ensure the database will only contain the latest entries
-    # cursor.execute("DELETE FROM journal_entries")
-
-    # # Open the journal file and read its content
-    # with open(Journal_loc, 'r', encoding='utf-8') as file:
-    #     content = file.read()
-
-    # # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
-    # entries_raw = content.strip().split('\n\n')
-
-    # entries = []
-    # for entry_raw in entries_raw:
-    #     parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
-    #     if len(parts) == 2:
-    #         date, content = parts
-    #     else:
-    #         # Handle potential formatting issues or incomplete entries
-    #         # print(f"Skipping incomplete entry: {parts[0]}")
-    #         continue
-
-    #     entries.append((date, content))
-
-    # # Insert the parsed journal entries into the database
-    # cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
-
-    # # Commit changes and close the connection
-    # conn.commit()
-    # conn.close()
 
 
 if "KB_create" not in st.session_state:
     st.session_state['KB_create'] = 'done'
     process_entries(KB_DB_Path, Scratchpad)
-#     conn = sqlite3.connect(KB_DB_Path)  # Ensure this path is correctly specified
-#     cursor = conn.cursor()
 
-#     cursor.execute("""CREATE TABLE IF NOT EXISTS KB_entries (
-#         id INTEGER PRIMARY KEY,
-#         Title TEXT,
-#         content TEXT
-#     )""")
-
-#     # Check if Scratchpad file exists and has content
-#     if os.path.exists(Scratchpad) and os.path.getsize(Scratchpad) > 0:
-#         with open(Scratchpad, 'r', encoding='utf-8') as file:
-#             content = file.read()
-
-#         entries_raw = content.strip().split('\n\n')
-
-#         cursor.execute("SELECT Title, content FROM KB_entries")
-#         existing_entries = cursor.fetchall()
-
-#         for entry_raw in entries_raw:
-#             parts = entry_raw.split('\n', 1)
-#             if len(parts) == 2:
-#                 Title, content = parts
-#                 is_similar, similar_entry = KB_similarity(content, existing_entries)
-                
-#                 if not is_similar:
-#                     cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title, content))
-#                 else:
-#                     merged_content = merge_with_AI(similar_entry[1], content)
-#                     if len(merged_content) > 2000:
-#                         part1, part2 = split_content_with_AI(merged_content)
-#                         cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 1", part1))
-#                         cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 2", part2))
-#                     else:
-#                         cursor.execute("UPDATE KB_entries SET content = ? WHERE Title = ?", (merged_content, similar_entry[0]))
-#             else:
-#                 continue
-#     with open(Scratchpad, "w", encoding='utf-8') as Scratchpad_file:
-#         Scratchpad_file.write("")
-#     conn.commit()
-#     conn.close()
 
 if "timestamp" not in st.session_state:
     append_date_time_to_chatlog()
@@ -558,4 +479,90 @@ if prompt:
         write_KB()
         write_journal()
         append_date_time_to_chatlog()
+################################Graveyard############################
+        
+        # if "KB_create" not in st.session_state:
+#     st.session_state['KB_create'] = 'done'
+#     conn = sqlite3.connect(KB_DB_Path)  # Ensure this path is correctly specified
+#     cursor = conn.cursor()
 
+#     cursor.execute("""CREATE TABLE IF NOT EXISTS KB_entries (
+#         id INTEGER PRIMARY KEY,
+#         Title TEXT,
+#         content TEXT
+#     )""")
+
+#     # Check if Scratchpad file exists and has content
+#     if os.path.exists(Scratchpad) and os.path.getsize(Scratchpad) > 0:
+#         with open(Scratchpad, 'r', encoding='utf-8') as file:
+#             content = file.read()
+
+#         entries_raw = content.strip().split('\n\n')
+
+#         cursor.execute("SELECT Title, content FROM KB_entries")
+#         existing_entries = cursor.fetchall()
+
+#         for entry_raw in entries_raw:
+#             parts = entry_raw.split('\n', 1)
+#             if len(parts) == 2:
+#                 Title, content = parts
+#                 is_similar, similar_entry = KB_similarity(content, existing_entries)
+                
+#                 if not is_similar:
+#                     cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title, content))
+#                 else:
+#                     merged_content = merge_with_AI(similar_entry[1], content)
+#                     if len(merged_content) > 2000:
+#                         part1, part2 = split_content_with_AI(merged_content)
+#                         cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 1", part1))
+#                         cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 2", part2))
+#                     else:
+#                         cursor.execute("UPDATE KB_entries SET content = ? WHERE Title = ?", (merged_content, similar_entry[0]))
+#             else:
+#                 continue
+#     with open(Scratchpad, "w", encoding='utf-8') as Scratchpad_file:
+#         Scratchpad_file.write("")
+#     conn.commit()
+#     conn.close()
+        
+# if "DB Jorunal" not in st.session_state:
+#     st.session_state['DB Jorunal'] = 'done'
+    # # Connect to the SQLite database (this will create the database if it does not exist)
+    # conn = sqlite3.connect(chromadb_path)
+    # cursor = conn.cursor()
+
+    # # Create a table to store journal entries if it doesn't exist
+    # cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
+    #     id INTEGER PRIMARY KEY,
+    #     date TEXT,
+    #     content TEXT
+    # )""")
+
+    # # Clear the table to ensure the database will only contain the latest entries
+    # cursor.execute("DELETE FROM journal_entries")
+
+    # # Open the journal file and read its content
+    # with open(Journal_loc, 'r', encoding='utf-8') as file:
+    #     content = file.read()
+
+    # # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
+    # entries_raw = content.strip().split('\n\n')
+
+    # entries = []
+    # for entry_raw in entries_raw:
+    #     parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
+    #     if len(parts) == 2:
+    #         date, content = parts
+    #     else:
+    #         # Handle potential formatting issues or incomplete entries
+    #         # print(f"Skipping incomplete entry: {parts[0]}")
+    #         continue
+
+    #     entries.append((date, content))
+
+    # # Insert the parsed journal entries into the database
+    # cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
+
+    # # Commit changes and close the connection
+    # conn.commit()
+    # conn.close()

@@ -284,8 +284,6 @@ for msg in st.session_state.messages:
 
 
 if prompt:
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
     time_right_now = "current time:"+"\n"+datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     entries = fetch_journal_entries()
     memory = "Memory" + "\n" + calculate_similarity(prompt, entries)
