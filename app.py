@@ -97,26 +97,6 @@ def create_faiss_index(embeddings):
     
     return index
 
-# def calculate_similarity(user_prompt, entries):
-#     # Convert user prompt and entries to embeddings
-#     prompt_embedding = model.encode([user_prompt])
-#     entry_embeddings = np.array(model.encode(entries['content'].tolist()))
-    
-#     # Create a FAISS index for the entry embeddings
-#     index = create_faiss_index(entry_embeddings)
-    
-#     # Search the index for the most similar entries
-#     D, I = index.search(prompt_embedding, 1)  # Search for the top 1 closest entries
-    
-#     # Get the most similar entry details
-#     if len(I) > 0:
-#         most_similar_entry_index = I[0][0]
-#         most_similar_distance = D[0][0]
-#         memory = f"{entries.iloc[most_similar_entry_index]['date']}\n{entries.iloc[most_similar_entry_index]['content']}"
-#     else:
-#         memory = "You don't have any relevent memories."
-    
-#     return memory
 
 def calculate_similarity(user_prompt, entries, similarity_threshold=1.5):
     # Convert user prompt and entries to embeddings

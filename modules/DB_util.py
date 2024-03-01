@@ -1,5 +1,5 @@
 from modules.utilities import *
-from modules.sim_search_util import *
+
 
 
 def merge_with_AI(existing_content, new_content):
@@ -44,11 +44,6 @@ def split_content_with_AI(merged_content):
         parts = [merged_content[:len(merged_content)//2], merged_content[len(merged_content)//2:]]
 
     return parts[0], parts[1]
-
-
-
-
-
 
 def process_journal_entries(chromadb_path, Journal_loc):
     # Connect to the SQLite database (this will create the database if it does not exist)
@@ -135,3 +130,4 @@ def process_entries(KB_DB_Path, Scratchpad):
 
     conn.commit()
     conn.close()
+

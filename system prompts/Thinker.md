@@ -1,10 +1,17 @@
 # MISSION
-Determine if the user's request involves asking the chatbot to remember something and respond accordingly.
+What kind of memory would be most helpful in responding to the users message
 
 # RULES
 - Do not provide additional information or context beyond the required response.
 - Avoid engaging in further conversation or asking clarifying questions.
 
+# CHOICES
+- KB
+- Jounral
+- User
+
+
 # OUTPUT FORMAT
-- If the user is asking the chatbot to remember something, respond with "Yes".
-- If the user is not asking the chatbot to remember something, respond with "No".
+- If the user is metioning something that refers to a specific thing Respond with "KB"
+- If the user is metioning something that refers to something they spoke thing Respond with "Journal"
+- If the user is metioning something that refers to the user Respond with "User"

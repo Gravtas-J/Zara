@@ -1,5 +1,6 @@
 from modules.utilities import *
 from modules.DB_util import *
+from modules.GPTs import *
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 chromadb_path = os.path.join('chromadb', 'chromaDB.db')
@@ -36,16 +37,6 @@ def ensure_Journal_exists(filepath):
 def open_file(filepath):
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
         return infile.read()
-    
-def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
-    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response['choices'][0]['message']['content']
-    return text, response['usage']['total_tokens']
-
-def chatbotGPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
-    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response['choices'][0]['message']['content']
-    return text, response['usage']['total_tokens']
 
 def response_generator(msg_content):
     for word in msg_content.split():
@@ -61,7 +52,6 @@ def append_to_chatlog(message):
     
     with open(Chatlog_loc, "a") as chatlog_file:
         chatlog_file.write(message + "\n")
-
 
 def fetch_journal_entries():
     """Fetch all journal entries from the database."""
@@ -111,7 +101,7 @@ def update_profile():
     update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
 
     # Send the user profile data to the profiling module and get the response
-    User_profile_updated, tokens_risk = chatbotGPT3(update_data)
+    User_profile_updated, tokens_risk = GPT3(update_data)
 
     # Compare the lengths of the original data and the updated data
     if len(User_profile_updated) < len(original_data):
@@ -130,12 +120,11 @@ def update_profile():
 def backup_profile():
     profile_temp = open_file(userprofile)
     with open(backup_userprofile, "w") as backupfile:
-        backupfile.write(profile_temp)
-    
+        backupfile.write(profile_temp)   
 
 def update_matrix():
     Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    Matrix_updated, tokens_risk = chatbotGPT4(Update_Person_matrix)   
+    Matrix_updated, tokens_risk = GPT4(Update_Person_matrix)   
     with open(User_matrix, "w") as file:
         file.write(Matrix_updated)
 
@@ -147,10 +136,8 @@ def write_journal():
         Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
         # st.write(Journal)
         response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Journal, temperature=0, max_tokens=4000)
-        text = response['choices'][0]['message']['content']
-        # st.write(Update_Journal)
-        Update_Journal = text
-        
+        Update_Journal = response['choices'][0]['message']['content']
+        # st.write(Update_Journal)        
         try:
             open(Journal_loc, "r").close()
         except FileNotFoundError:
@@ -185,7 +172,10 @@ def write_KB():
         with open(Scratchpad, "a") as Scratchpad_file:  # Changed mode to "a" for appending to the end
             Scratchpad_file.write(KB_temp +"\n\n")
 
-
+def Pic_Memory():
+    Update_Person_matrix = [{'role': 'system', 'content': Thinker}, {'role': 'user', 'content': prompt}]
+    mem_choice, tokens_risk = GPT4(Update_Person_matrix)
+    return mem_choice   
 
 
 #=================================================================#
@@ -206,7 +196,7 @@ Journal_loc = os.path.join('Memories', 'Journal.txt')
 Persona=os.path.join('Personas', 'Zara.md')
 userprofile=os.path.join('Memories', 'user_profile.txt')
 portrait_path = os.path.join('Portrait', 'T.png')
-Thinker_loc = os.path.join('system prompts', 'Thinker.md')
+Thinker = open_file(os.path.join('system prompts', 'Thinker.md'))
 embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
 User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
 Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
@@ -215,6 +205,8 @@ KB_entry_merger = os.path.join('system prompts', 'KB_merger.md')
 Scratchpad = os.path.join('Memories', 'scratchpad.txt')
 backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
 
+
+
 prompt = st.chat_input()
 Profile_update = open_file(Update_user)
 persona_content = open_file(Persona)
@@ -222,7 +214,7 @@ User_pro = open_file(userprofile)
 Matrix_writer_content = open_file(Matrix_writer_prompt)
 Matrix_content = open_file(User_matrix)
 Matrix_writer = Matrix_writer_content + Matrix_content
-Content = persona_content + User_pro + Matrix_content
+Content = persona_content 
 Profile_check = Profile_update+User_pro
 
 os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
@@ -255,6 +247,7 @@ if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 if "chat_log" not in st.session_state:
     st.session_state["chat_log"] = ""
+
 for msg in st.session_state.messages:
     if msg["role"] == "assistant":
         # For assistant messages, use the custom avatar
@@ -264,23 +257,38 @@ for msg in st.session_state.messages:
         # For user messages, display as usual
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
-
 #============================CHATBOT FUNCTION =====================================#
 if prompt:
-    time_right_now = "current time:"+"\n"+datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    jorunal_entries = fetch_journal_entries()
-    KB_entries = fetch_KB_entries()
-    retrieved_journal = "Journal Entry:\n" + Journal_similarity(prompt, jorunal_entries) 
-    retrieved_KB = "KB entry: \n" + KB_chat_similarity(prompt, KB_entries)
-    memory = retrieved_journal + "\n" + retrieved_KB
-    # st.sidebar.write(memory)
+    choice = Pic_Memory()
+    if choice == "KB":
+        KB_entries = fetch_KB_entries()
+        memory = "KB entry: \n" + KB_chat_similarity(prompt, KB_entries)
+        
+    elif choice == "Journal":
+        jorunal_entries = fetch_journal_entries()
+        memory = "Journal Entry:\n" + Journal_similarity(prompt, jorunal_entries) 
+        
+    elif choice == "User":
+        memory = User_pro + Matrix_content 
+    else:
+        memory = " you don't have any memories about this" 
 
+    # jorunal_entries = fetch_journal_entries()
+    # KB_entries = fetch_KB_entries()
+    # retrieved_journal = "Journal Entry:\n" + Journal_similarity(prompt, jorunal_entries) 
+    # retrieved_KB = "KB entry: \n" + KB_chat_similarity(prompt, KB_entries)
+    # memory = retrieved_journal + "\n" + retrieved_KB
+    st.sidebar.header("What type of memory I'm using" )
+    st.sidebar.write(choice)
+    st.sidebar.header("The memory")
+    st.sidebar.write(memory)
     st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user message in chat message container
     with st.chat_message("user",):
         st.write(prompt)
 
     # followed by the actual chat messages exchanged in the session.
+    time_right_now = "current time:"+"\n"+datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     system_prompt = {
         "role": "system",
         "content": time_right_now + Content  + memory
@@ -318,90 +326,3 @@ if prompt:
         write_KB()
         write_journal()
         append_date_time_to_chatlog()
-################################Graveyard############################
-        
-        # if "KB_create" not in st.session_state:
-#     st.session_state['KB_create'] = 'done'
-#     conn = sqlite3.connect(KB_DB_Path)  # Ensure this path is correctly specified
-#     cursor = conn.cursor()
-
-#     cursor.execute("""CREATE TABLE IF NOT EXISTS KB_entries (
-#         id INTEGER PRIMARY KEY,
-#         Title TEXT,
-#         content TEXT
-#     )""")
-
-#     # Check if Scratchpad file exists and has content
-#     if os.path.exists(Scratchpad) and os.path.getsize(Scratchpad) > 0:
-#         with open(Scratchpad, 'r', encoding='utf-8') as file:
-#             content = file.read()
-
-#         entries_raw = content.strip().split('\n\n')
-
-#         cursor.execute("SELECT Title, content FROM KB_entries")
-#         existing_entries = cursor.fetchall()
-
-#         for entry_raw in entries_raw:
-#             parts = entry_raw.split('\n', 1)
-#             if len(parts) == 2:
-#                 Title, content = parts
-#                 is_similar, similar_entry = KB_similarity(content, existing_entries)
-                
-#                 if not is_similar:
-#                     cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title, content))
-#                 else:
-#                     merged_content = merge_with_AI(similar_entry[1], content)
-#                     if len(merged_content) > 2000:
-#                         part1, part2 = split_content_with_AI(merged_content)
-#                         cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 1", part1))
-#                         cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 2", part2))
-#                     else:
-#                         cursor.execute("UPDATE KB_entries SET content = ? WHERE Title = ?", (merged_content, similar_entry[0]))
-#             else:
-#                 continue
-#     with open(Scratchpad, "w", encoding='utf-8') as Scratchpad_file:
-#         Scratchpad_file.write("")
-#     conn.commit()
-#     conn.close()
-        
-# if "DB Jorunal" not in st.session_state:
-#     st.session_state['DB Jorunal'] = 'done'
-    # # Connect to the SQLite database (this will create the database if it does not exist)
-    # conn = sqlite3.connect(chromadb_path)
-    # cursor = conn.cursor()
-
-    # # Create a table to store journal entries if it doesn't exist
-    # cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
-    #     id INTEGER PRIMARY KEY,
-    #     date TEXT,
-    #     content TEXT
-    # )""")
-
-    # # Clear the table to ensure the database will only contain the latest entries
-    # cursor.execute("DELETE FROM journal_entries")
-
-    # # Open the journal file and read its content
-    # with open(Journal_loc, 'r', encoding='utf-8') as file:
-    #     content = file.read()
-
-    # # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
-    # entries_raw = content.strip().split('\n\n')
-
-    # entries = []
-    # for entry_raw in entries_raw:
-    #     parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
-    #     if len(parts) == 2:
-    #         date, content = parts
-    #     else:
-    #         # Handle potential formatting issues or incomplete entries
-    #         # print(f"Skipping incomplete entry: {parts[0]}")
-    #         continue
-
-    #     entries.append((date, content))
-
-    # # Insert the parsed journal entries into the database
-    # cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
-
-    # # Commit changes and close the connection
-    # conn.commit()
-    # conn.close()

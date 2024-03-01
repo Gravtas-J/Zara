@@ -91,7 +91,7 @@ def calculate_similarity(user_prompt, entries):
         idx = I[0][i]
         distance = D[0][i]
         similar_entries.append({
-            'date': entries.iloc[idx]['date'],
+            'Title': entries.iloc[idx]['Title'],
             'content': entries.iloc[idx]['content'],
             'similarity_score': distance
         })
@@ -133,7 +133,7 @@ if search_button and user_prompt:
     # Display the search results
     if not similar_entries.empty:
         for _, row in similar_entries.iterrows():
-            st.write(f"**Date:** {row['date']}, **Similarity Score:** {row['similarity_score']}")
+            st.write(f"**Title:** {row['Title']}, **Similarity Score:** {row['similarity_score']}")
             st.write(f"**Content:** {row['content']}")
     else:
         st.write("No entries found.")
