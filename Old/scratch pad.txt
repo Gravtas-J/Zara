@@ -1,4 +1,4 @@
-add a system that checks length of chatlog, after ceratin length is reached clip the chatlog. 
+add a system that checks length of chatlog, after ceratin length is reached clip the chatlog. ---- done
 
 add system to add multiple users and contextualise the journaling function with which user profile is loaded. 
 
@@ -6,4 +6,7 @@ add core and ephemeral personality systems. Core informs ephemeral, ephemeral + 
 
 add time perception and system to add inner thoughts at random intervals. Persona + user_profile + episodic_memory + time since last message + inner thoguhts had since last message. 
 
-find out how freqently people have inner thoughts
+find out how freqently people have inner thoughts  ---- done
+
+
+The following changes are tracked by git. Create a commit message with the most important bullet points and a short Title with words like UPDATED, ADDED, FIXED or REMOVED. After the title, add a blank line and then the bullet points. The bullet points should describe the changes in more detail but not longer than needed. Changes:

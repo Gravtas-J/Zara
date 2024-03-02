@@ -18,7 +18,6 @@ If there is no conversation log and only a time and date give an space as output
 - Write clearly and concisely, focusing on relevant details that contribute to understanding the patient's therapeutic journey.
 - Reflect on the session, considering what worked well and what could be improved.
 - Anticipate potential areas for further exploration, possible challenges, or adjustments in therapeutic techniques based on the session's insights.
-- If there is no conversation log do not respond.
 - Do not have linebreaks in the body of the jounral entry 
 
 # OUTPUT FORMAT

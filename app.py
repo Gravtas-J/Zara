@@ -55,7 +55,7 @@ def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
     text = response['choices'][0]['message']['content']
     return text, response['usage']['total_tokens']
 
-def chatbotGPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
+def GPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
     response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
     text = response['choices'][0]['message']['content']
     return text, response['usage']['total_tokens']
@@ -120,12 +120,34 @@ def calculate_similarity(user_prompt, entries, similarity_threshold=1.5):
     return memory
 
 def update_profile():
-    Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
-    with open(userprofile, "w") as file:
-        file.write(User_profile_updated)
+    # Read the original user profile data from the file
+    with open(userprofile, "r") as file:
+        original_data = file.read()
 
-    
+    # Prepare the data to be sent to the profiling module
+    update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+
+    # Send the user profile data to the profiling module and get the response
+    User_profile_updated, tokens_risk = GPT3(update_data)
+
+    # Compare the lengths of the original data and the updated data
+    if len(User_profile_updated) < len(original_data):
+        # Restore the original data from a backup file
+        with open(backup_userprofile, "r") as backup_file:
+            restored_data = backup_file.read()
+        
+        # Save the restored data back to the user profile file
+        with open(userprofile, "w") as file:
+            file.write(restored_data)
+    else:
+        # Save the updated data to the user profile file
+        with open(userprofile, "w") as file:
+            file.write(User_profile_updated)
+
+def backup_profile():
+    profile_temp = open_file(userprofile)
+    with open(backup_userprofile, "w") as backupfile:
+        backupfile.write(profile_temp)   
 
 def update_matrix():
     Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
@@ -133,19 +155,16 @@ def update_matrix():
     with open(User_matrix, "w") as file:
         file.write(Matrix_updated)
 
-
 def write_journal():
     Prev_Chatlog = open_file(Chatlog_loc)
-    if Prev_Chatlog.strip():  # Check if Prev_Chatlog is not empty
+    if len(Prev_Chatlog) > 50:  # Check if Prev_Chatlog is not empty
         Journal_writer= open_file(Journaler)
         # st.write(Prev_Chatlog)
         Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
         # st.write(Journal)
         response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Journal, temperature=0, max_tokens=4000)
-        text = response['choices'][0]['message']['content']
-        # st.write(Update_Journal)
-        Update_Journal = text
-        
+        Update_Journal = response['choices'][0]['message']['content']
+        # st.write(Update_Journal)        
         try:
             open(Journal_loc, "r").close()
         except FileNotFoundError:
@@ -154,6 +173,9 @@ def write_journal():
         with open(Journal_loc, "a") as Journal_file:  # Changed mode to "a" for appending to the end
             Journal_file.write("\n" + Update_Journal +"\n")
 
+        with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
+            chat_log_file.write("")
+    else:
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
 
@@ -167,23 +189,24 @@ ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
 ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'user_person_matrix.txt'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
-Update_user = os.path.join('system prompts', 'User_update.md')
+# Update_user = os.path.join('system prompts', 'User_update.md')
 Journaler = os.path.join('system prompts', 'Journaler.md')
 Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
 Journal_loc = os.path.join('Memories', 'Journal.txt')
-Persona=os.path.join('Personas', 'Zara.md')
+# Persona=os.path.join('Personas', 'Zara.md')
 userprofile=os.path.join('Memories', 'user_profile.txt')
 portrait_path = os.path.join('Portrait', 'T.png')
 Thinker_loc = os.path.join('system prompts', 'Thinker.md')
 embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
 User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
 Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
+backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
 
 
 
 prompt = st.chat_input()
-Profile_update = open_file(Update_user)
-persona_content = open_file(Persona)
+Profile_update = os.path.join('system prompts', 'User_update.md')
+persona_content = os.path.join('Personas', 'Zara.md')
 User_pro = open_file(userprofile)
 Matrix_writer_content = open_file(Matrix_writer_prompt)
 Matrix_content = open_file(User_matrix)
@@ -196,6 +219,7 @@ os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 
 if "Journal" not in st.session_state:
     st.session_state['Journal'] = "done"
+    backup_profile()
     write_journal()
 
 #============================EMBEDDING FUNCTION =====================================#

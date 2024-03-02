@@ -214,7 +214,7 @@ User_pro = open_file(userprofile)
 Matrix_writer_content = open_file(Matrix_writer_prompt)
 Matrix_content = open_file(User_matrix)
 Matrix_writer = Matrix_writer_content + Matrix_content
-Content = persona_content 
+Content = persona_content + User_pro + Matrix_content 
 Profile_check = Profile_update+User_pro
 
 os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
@@ -257,6 +257,10 @@ for msg in st.session_state.messages:
         # For user messages, display as usual
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
+if st.sidebar.radio("Show thinking", ["yes", "no"]) == "yes":
+    st.session_state["show thinking"] = "yes"
+else:
+    st.session_state["show thinking"] = "no"
 #============================CHATBOT FUNCTION =====================================#
 if prompt:
     choice = Pic_Memory()
@@ -268,8 +272,8 @@ if prompt:
         jorunal_entries = fetch_journal_entries()
         memory = "Journal Entry:\n" + Journal_similarity(prompt, jorunal_entries) 
         
-    elif choice == "User":
-        memory = User_pro + Matrix_content 
+    # elif choice == "User":
+    #     memory = User_pro + Matrix_content 
     else:
         memory = " you don't have any memories about this" 
 
@@ -278,11 +282,12 @@ if prompt:
     # retrieved_journal = "Journal Entry:\n" + Journal_similarity(prompt, jorunal_entries) 
     # retrieved_KB = "KB entry: \n" + KB_chat_similarity(prompt, KB_entries)
     # memory = retrieved_journal + "\n" + retrieved_KB
-    st.sidebar.header("What type of memory I'm using" )
-    st.sidebar.write(choice)
-    st.sidebar.header("The memory")
-    st.sidebar.write(memory)
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    if st.session_state["show thinking"] == "yes":
+        st.sidebar.header("What type of memory I'm using" )
+        st.sidebar.write(choice)
+        st.sidebar.header("The memory")
+        st.sidebar.write(memory)
+        st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user message in chat message container
     with st.chat_message("user",):
         st.write(prompt)
