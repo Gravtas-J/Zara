@@ -167,7 +167,7 @@ def backup_profile():
 
 def update_matrix():
     Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    Matrix_updated, tokens_risk = chatbotGPT4(Update_Person_matrix)   
+    Matrix_updated, tokens_risk = GPT3(Update_Person_matrix)   
     with open(User_matrix, "w") as file:
         file.write(Matrix_updated)
 
