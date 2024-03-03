@@ -184,10 +184,10 @@ def write_journal():
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
 
-def Pic_Memory():
-    Update_Person_matrix = [{'role': 'system', 'content': Thinker}, {'role': 'user', 'content': prompt}]
-    mem_choice, tokens_risk = GPT4(Update_Person_matrix)
-    return mem_choice   
+# def Pic_Memory():
+#     Update_Person_matrix = [{'role': 'system', 'content': Thinker}, {'role': 'user', 'content': prompt}]
+#     mem_choice, tokens_risk = GPT4(Update_Person_matrix)
+#     return mem_choice   
 
 
 #=================================================================#
@@ -249,28 +249,28 @@ else:
     st.session_state["show thinking"] = "no"
 #============================CHATBOT FUNCTION =====================================#
 if prompt:
-    choice = Pic_Memory()
-    if choice == "KB":
-        KB_entries = fetch_KB_entries()
-        memory = "KB entry: \n" + KB_chat_similarity(prompt, KB_entries)
+    # choice = Pic_Memory()
+    # if choice == "KB":
+    #     KB_entries = fetch_KB_entries()
+    #     memory = "KB entry: \n" + KB_chat_similarity(prompt, KB_entries)
         
-    elif choice == "Journal":
-        jorunal_entries = fetch_journal_entries()
-        memory = "Journal Entry:\n" + Journal_similarity(prompt, jorunal_entries) 
+    # elif choice == "Journal":
+    #     jorunal_entries = fetch_journal_entries()
+    #     memory = "Journal Entry:\n" + Journal_similarity(prompt, jorunal_entries) 
         
-    # elif choice == "User":
-    #     memory = User_pro + Matrix_content 
-    else:
-        memory = " you don't have any memories about this" 
+    # # elif choice == "User":
+    # #     memory = User_pro + Matrix_content 
+    # else:
+    #     memory = " you don't have any memories about this" 
 
-    # jorunal_entries = fetch_journal_entries()
-    # KB_entries = fetch_KB_entries()
-    # retrieved_journal = "Journal Entry:\n" + Journal_similarity(prompt, jorunal_entries) 
-    # retrieved_KB = "KB entry: \n" + KB_chat_similarity(prompt, KB_entries)
-    # memory = retrieved_journal + "\n" + retrieved_KB
+    jorunal_entries = fetch_journal_entries()
+    KB_entries = fetch_KB_entries()
+    retrieved_journal = "Journal Entry:\n" + Journal_similarity(prompt, jorunal_entries) 
+    retrieved_KB = "KB entry: \n" + KB_chat_similarity(prompt, KB_entries)
+    memory = retrieved_journal + "\n" + retrieved_KB
     if st.session_state["show thinking"] == "yes":
-        st.sidebar.header("What type of memory I'm using" )
-        st.sidebar.write(choice)
+        # st.sidebar.header("What type of memory I'm using" )
+        # st.sidebar.write(choice)
         st.sidebar.header("The memory")
         st.sidebar.write(memory)
         st.session_state.messages.append({"role": "user", "content": prompt})

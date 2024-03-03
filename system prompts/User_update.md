@@ -3,7 +3,8 @@ Analyze a user message and update user profile with new information, adhering st
 
 # RULES
 
-If there is no new inforamtion in the user message output the user profile as it exists. 
+- If there is no new inforamtion in the user message output the user profile as it exists. 
+- The user's personality assessment is managed my another file. Do not add a personality assessment to the user profile. 
 
 # ACTIONS
 - Scrutinize the message.
