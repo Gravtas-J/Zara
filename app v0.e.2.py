@@ -1,5 +1,5 @@
 from modules.utilities import *
-from modules.DB_util import *
+from modules.KB_util import *
 from modules.GPTs import *
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -13,6 +13,47 @@ def append_date_time_to_chatlog():
         content = chatlog_file.read()
         chatlog_file.seek(0, 0)
         chatlog_file.write("Chatlog created at: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n\n" + content)
+
+def process_journal_entries(chromadb_path, Journal_loc):
+    # Connect to the SQLite database (this will create the database if it does not exist)
+    conn = sqlite3.connect(chromadb_path)
+    cursor = conn.cursor()
+
+    # Create a table to store journal entries if it doesn't exist
+    cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
+        id INTEGER PRIMARY KEY,
+        date TEXT,
+        content TEXT
+    )""")
+
+    # Clear the table to ensure the database will only contain the latest entries
+    cursor.execute("DELETE FROM journal_entries")
+
+    # Open the journal file and read its content
+    with open(Journal_loc, 'r', encoding='utf-8') as file:
+        content = file.read()
+
+    # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
+    entries_raw = content.strip().split('\n\n')
+
+    entries = []
+    for entry_raw in entries_raw:
+        parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
+        if len(parts) == 2:
+            date, content = parts
+        else:
+            # Handle potential formatting issues or incomplete entries
+            # print(f"Skipping incomplete entry: {parts[0]}")
+            continue
+
+        entries.append((date, content))
+
+    # Insert the parsed journal entries into the database
+    cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
+
+    # Commit changes and close the connection
+    conn.commit()
+    conn.close()
 
 def ensure_userprofile_exists(filepath):
     # Check if the file exists
@@ -34,9 +75,7 @@ def ensure_Journal_exists(filepath):
             # You can initialize the file with default content if necessary
             f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n" + "I am Zara, I am excited to be helping whoever i am speaking with. I will be poliet but firm with who i am speaking with and trust that my memories are correct.")  # Write an empty string or initial content
 
-def open_file(filepath):
-    with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
-        return infile.read()
+
 
 def response_generator(msg_content):
     for word in msg_content.split():
@@ -62,14 +101,7 @@ def fetch_journal_entries():
     # print(f"Fetched {len(df)} entries")  # Debug print
     return df
 
-def fetch_KB_entries():
-    """Fetch all journal entries from the database."""
-    conn = sqlite3.connect(KB_DB_Path)
-    query = "SELECT id, Title, content FROM KB_entries"
-    df = pd.read_sql_query(query, conn)
-    conn.close()
-    # print(f"Fetched {len(df)} entries")  # Debug print
-    return df
+
 
 def Journal_similarity(user_prompt, entries, similarity_threshold=1.5):
     # Convert user prompt and entries to embeddings
@@ -152,26 +184,6 @@ def write_journal():
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
 
-def write_KB():
-    Prev_Chatlog = open_file(Chatlog_loc)
-    if len(Prev_Chatlog) > 50:   # Check if Prev_Chatlog is not empty
-        KB_entry_writer= open_file(KB_writer)
-        # st.write(Prev_Chatlog)
-        KB_info = [{'role': 'system', 'content': KB_entry_writer}, {'role': 'user', 'content': Prev_Chatlog}]
-        # st.write(Journal)
-        response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=KB_info, temperature=0, max_tokens=4000)
-        text = response['choices'][0]['message']['content']
-        # st.write(Update_Journal)
-        KB_temp = text
-        
-        try:
-            open(Scratchpad, "r").close()
-        except FileNotFoundError:
-            open(Scratchpad, "w").close()
-        
-        with open(Scratchpad, "a") as Scratchpad_file:  # Changed mode to "a" for appending to the end
-            Scratchpad_file.write(KB_temp +"\n\n")
-
 def Pic_Memory():
     Update_Person_matrix = [{'role': 'system', 'content': Thinker}, {'role': 'user', 'content': prompt}]
     mem_choice, tokens_risk = GPT4(Update_Person_matrix)
@@ -189,33 +201,7 @@ ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'scratchpad.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'user_person_matrix.txt'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
-Update_user = os.path.join('system prompts', 'User_update.md')
-Journaler = os.path.join('system prompts', 'Journaler.md')
-Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
-Journal_loc = os.path.join('Memories', 'Journal.txt')
-Persona=os.path.join('Personas', 'Zara.md')
-userprofile=os.path.join('Memories', 'user_profile.txt')
-portrait_path = os.path.join('Portrait', 'T.png')
-Thinker = open_file(os.path.join('system prompts', 'Thinker.md'))
-embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
-User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
-Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
-KB_writer = os.path.join('system prompts', 'KB_writer.md')
-KB_entry_merger = os.path.join('system prompts', 'KB_merger.md')
-Scratchpad = os.path.join('Memories', 'scratchpad.txt')
-backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
 
-
-
-prompt = st.chat_input()
-Profile_update = open_file(Update_user)
-persona_content = open_file(Persona)
-User_pro = open_file(userprofile)
-Matrix_writer_content = open_file(Matrix_writer_prompt)
-Matrix_content = open_file(User_matrix)
-Matrix_writer = Matrix_writer_content + Matrix_content
-Content = persona_content + User_pro + Matrix_content 
-Profile_check = Profile_update+User_pro
 
 os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 

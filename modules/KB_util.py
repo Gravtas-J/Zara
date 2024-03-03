@@ -1,6 +1,36 @@
 from modules.utilities import *
 
+KB_DB_Path = os.path.join('chromadb', 'KB_DB.db')
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
+def write_KB():
+    Prev_Chatlog = open_file(Chatlog_loc)
+    if len(Prev_Chatlog) > 50:   # Check if Prev_Chatlog is not empty
+        KB_entry_writer= open_file(KB_writer)
+        # st.write(Prev_Chatlog)
+        KB_info = [{'role': 'system', 'content': KB_entry_writer}, {'role': 'user', 'content': Prev_Chatlog}]
+        # st.write(Journal)
+        response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=KB_info, temperature=0, max_tokens=4000)
+        text = response['choices'][0]['message']['content']
+        # st.write(Update_Journal)
+        KB_temp = text
+        
+        try:
+            open(Scratchpad, "r").close()
+        except FileNotFoundError:
+            open(Scratchpad, "w").close()
+        
+        with open(Scratchpad, "a") as Scratchpad_file:  # Changed mode to "a" for appending to the end
+            Scratchpad_file.write(KB_temp +"\n\n")
+
+def fetch_KB_entries():
+    """Fetch all journal entries from the database."""
+    conn = sqlite3.connect(KB_DB_Path)
+    query = "SELECT id, Title, content FROM KB_entries"
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    # print(f"Fetched {len(df)} entries")  # Debug print
+    return df
 
 def merge_with_AI(existing_content, new_content):
     # Prepare the prompt for the AI
@@ -45,46 +75,6 @@ def split_content_with_AI(merged_content):
 
     return parts[0], parts[1]
 
-def process_journal_entries(chromadb_path, Journal_loc):
-    # Connect to the SQLite database (this will create the database if it does not exist)
-    conn = sqlite3.connect(chromadb_path)
-    cursor = conn.cursor()
-
-    # Create a table to store journal entries if it doesn't exist
-    cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
-        id INTEGER PRIMARY KEY,
-        date TEXT,
-        content TEXT
-    )""")
-
-    # Clear the table to ensure the database will only contain the latest entries
-    cursor.execute("DELETE FROM journal_entries")
-
-    # Open the journal file and read its content
-    with open(Journal_loc, 'r', encoding='utf-8') as file:
-        content = file.read()
-
-    # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
-    entries_raw = content.strip().split('\n\n')
-
-    entries = []
-    for entry_raw in entries_raw:
-        parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
-        if len(parts) == 2:
-            date, content = parts
-        else:
-            # Handle potential formatting issues or incomplete entries
-            # print(f"Skipping incomplete entry: {parts[0]}")
-            continue
-
-        entries.append((date, content))
-
-    # Insert the parsed journal entries into the database
-    cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
-
-    # Commit changes and close the connection
-    conn.commit()
-    conn.close()
 
 def process_entries(KB_DB_Path, Scratchpad):
     conn = sqlite3.connect(KB_DB_Path)  # Ensure this path is correctly specified
@@ -131,3 +121,38 @@ def process_entries(KB_DB_Path, Scratchpad):
     conn.commit()
     conn.close()
 
+def KB_similarity(new_entry_content, entries, similarity_threshold=0.8):
+    if len(entries) == 0:  # If no entries in DB, no need to calculate similarity
+        return False, None
+    # Convert new entry content to embedding
+    prompt_embedding = model.encode([new_entry_content])
+    # Convert existing entries to embeddings
+    entry_embeddings = np.array(model.encode([entry[1] for entry in entries]))
+    # Create a FAISS index for the entry embeddings
+    index = create_faiss_index(entry_embeddings)
+    # Search the index for the most similar entry
+    D, I = index.search(prompt_embedding, 1)  # Search for the top 1 closest entry
+    # Check if the most similar entry is below the similarity threshold
+    if D[0][0] < similarity_threshold:
+        return True, entries[I[0][0]]  # Similar entry found
+    return False, None  # No similar entry found
+
+def KB_chat_similarity(user_prompt, entries, similarity_threshold=1.5):
+    # Convert user prompt and entries to embeddings
+    prompt_embedding = model.encode([user_prompt])
+    entry_embeddings = np.array(model.encode([entry[1] for entry in entries]))
+    
+    # Create a FAISS index for the entry embeddings
+    index = create_faiss_index(entry_embeddings)
+    
+    # Search the index for the most similar entries
+    D, I = index.search(prompt_embedding, 1)  # Search for the top 1 closest entries
+    
+    # Ensure the result index is within the DataFrame bounds and similarity threshold is met
+    if I.size > 0 and I[0][0] < len(entries) and D[0][0] < similarity_threshold:
+        most_similar_entry_index = I[0][0]
+        memory = f"{entries.iloc[most_similar_entry_index]['Title']}\n{entries.iloc[most_similar_entry_index]['content']}"
+    else:
+        memory = "You don't have any relevant memories."
+    
+    return memory
