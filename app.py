@@ -12,6 +12,8 @@ import pandas as pd
 import faiss
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
+import difflib
+
 
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -130,8 +132,12 @@ def update_profile():
     # Send the user profile data to the profiling module and get the response
     User_profile_updated, tokens_risk = GPT3(update_data)
 
-    # Compare the lengths of the original data and the updated data
-    if len(User_profile_updated) < len(original_data):
+    # Calculate the number of differences between the original data and the updated data
+    diff = difflib.ndiff(original_data, User_profile_updated)
+    num_differences = len([d for d in diff if d[0] != ' '])
+
+    # Check if the number of differences exceeds 200
+    if num_differences > 200:
         # Restore the original data from a backup file
         with open(backup_userprofile, "r") as backup_file:
             restored_data = backup_file.read()
@@ -143,6 +149,31 @@ def update_profile():
         # Save the updated data to the user profile file
         with open(userprofile, "w") as file:
             file.write(User_profile_updated)
+
+# def update_profile(): ------- OLD 
+#     # Read the original user profile data from the file
+#     with open(userprofile, "r") as file:
+#         original_data = file.read()
+
+#     # Prepare the data to be sent to the profiling module
+#     update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+
+#     # Send the user profile data to the profiling module and get the response
+#     User_profile_updated, tokens_risk = GPT3(update_data)
+
+#     # Compare the lengths of the original data and the updated data
+#     if len(User_profile_updated) < len(original_data):
+#         # Restore the original data from a backup file
+#         with open(backup_userprofile, "r") as backup_file:
+#             restored_data = backup_file.read()
+        
+#         # Save the restored data back to the user profile file
+#         with open(userprofile, "w") as file:
+#             file.write(restored_data)
+#     else:
+#         # Save the updated data to the user profile file
+#         with open(userprofile, "w") as file:
+#             file.write(User_profile_updated)
 
 def backup_profile():
     profile_temp = open_file(userprofile)
@@ -197,9 +228,9 @@ Journal_loc = os.path.join('Memories', 'Journal.txt')
 userprofile=os.path.join('Memories', 'user_profile.txt')
 portrait_path = os.path.join('Portrait', 'T.png')
 Thinker_loc = os.path.join('system prompts', 'Thinker.md')
-embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
+# embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
 User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
-Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
+# Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
 backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
 
 
@@ -208,8 +239,8 @@ prompt = st.chat_input()
 Profile_update = os.path.join('system prompts', 'User_update.md')
 persona_content = os.path.join('Personas', 'Zara.md')
 User_pro = open_file(userprofile)
-Matrix_writer_content = open_file(Matrix_writer_prompt)
-Matrix_content = open_file(User_matrix)
+Matrix_writer_content = open_file(os.path.join('system prompts', 'Personality_matrix.md'))
+Matrix_content = open_file(os.path.join('Memories', 'user_person_matrix.txt'))
 Matrix_writer = Matrix_writer_content + Matrix_content
 Content = persona_content + User_pro + Matrix_content
 Profile_check = Profile_update+User_pro
@@ -267,7 +298,9 @@ if "embed" not in st.session_state:
 
 
 if "timestamp" not in st.session_state:
-    append_date_time_to_chatlog()
+    Prev_Chatlog = open_file(Chatlog_loc)
+    if len(Prev_Chatlog) < 1:  # Check if Prev_Chatlog is not empty
+        append_date_time_to_chatlog()
     st.session_state['timestamp'] = 'done'
 
 if 'messages' not in st.session_state:
