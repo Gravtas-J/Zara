@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from datetime import datetime
 import time
 import sqlite3
-# import spacy
 import pandas as pd
 import faiss
 from sentence_transformers import SentenceTransformer, util
@@ -77,7 +76,6 @@ def append_to_chatlog(message):
     with open(Chatlog_loc, "a") as chatlog_file:
         chatlog_file.write(message + "\n")
 
-
 def fetch_journal_entries():
     """Fetch all journal entries from the database."""
     conn = sqlite3.connect(chromadb_path)
@@ -98,7 +96,6 @@ def create_faiss_index(embeddings):
     index.add(embeddings)
     
     return index
-
 
 def calculate_similarity(user_prompt, entries, similarity_threshold=1.5):
     # Convert user prompt and entries to embeddings
@@ -150,18 +147,6 @@ def update_profile():
         with open(userprofile, "w") as file:
             file.write(User_profile_updated)
 
-# def update_profile(): ------- OLD 
-#     # Read the original user profile data from the file
-#     with open(userprofile, "r") as file:
-#         original_data = file.read()
-
-#     # Prepare the data to be sent to the profiling module
-#     update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-
-#     # Send the user profile data to the profiling module and get the response
-#     User_profile_updated, tokens_risk = GPT3(update_data)
-
-#     # Compare the lengths of the original data and the updated data
 #     if len(User_profile_updated) < len(original_data):
 #         # Restore the original data from a backup file
 #         with open(backup_userprofile, "r") as backup_file:
