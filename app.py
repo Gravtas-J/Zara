@@ -51,7 +51,7 @@ def open_file(filepath):
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
         return infile.read()
     
-def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
+def GPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
     response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
     text = response['choices'][0]['message']['content']
     return text, response['usage']['total_tokens']
@@ -117,6 +117,19 @@ def calculate_similarity(user_prompt, entries, similarity_threshold=1.5):
         memory = "You don't have any relevant memories."
     
     return memory
+
+def assessor():
+    # Read the original user profile data from the file
+    with open(cb_assess_loc, "r") as file:
+        original_data = file.read()
+
+    # Prepare the data to be sent to the profiling module
+    update_data = [{'role': 'system', 'content': Assessment_full}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+
+    # Send the user profile data to the profiling module and get the response
+    update_assessment, tokens_risk = GPT3(update_data)
+    with open(cb_assess_loc, "w") as file:
+        file.write(update_assessment + "\n")
 
 def update_profile():
     # Read the original user profile data from the file
@@ -202,22 +215,24 @@ load_dotenv()
 
 ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
-ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'user_person_matrix.txt'))
+ensure_userprofile_exists(os.path.join('Memories', 'CB_assess.txt'))
+ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
-# Update_user = os.path.join('system prompts', 'User_update.md')
 Journaler = os.path.join('system prompts', 'Journaler.md')
 Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
 Journal_loc = os.path.join('Memories', 'Journal.txt')
-# Persona=os.path.join('Personas', 'Zara.md')
 userprofile=os.path.join('Memories', 'user_profile.txt')
 portrait_path = os.path.join('Portrait', 'T.png')
 Thinker_loc = os.path.join('system prompts', 'Thinker.md')
-# embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
 User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
-# Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
 backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
-
+cb_assess_loc =  os.path.join('Memories', 'CB_assess.txt')
+CB_assess = open_file((os.path.join('Memories', 'CB_assess.txt')))
+assessor_loc = os.path.join('system prompts', 'assessor.md')
+assess_content = open_file(assessor_loc)
+Assessment_full = assess_content + CB_assess
 
 
 prompt = st.chat_input()
@@ -344,6 +359,7 @@ if prompt:
     
     update_profile()
     update_matrix()
+    assessor()
 
     # Append the latest user and assistant messages to the chatlog file
     append_to_chatlog(f"User: {prompt}")
