@@ -10,3 +10,16 @@ find out how freqently people have inner thoughts  ---- done
 
 
 The following changes are tracked by git. Create a commit message with the most important bullet points and a short Title with words like UPDATED, ADDED, FIXED or REMOVED. After the title, add a blank line and then the bullet points. The bullet points should describe the changes in more detail but not longer than needed. Changes:
+
+
+
+
+
+
+
+
+
+
+============================================
+
+you are going to be assessing the output of a chatbot. your task is to deteriming what their ojective is from what their replies are. You aren't judging the chatbots responses only giving an inturpertation of what it's goals might be
