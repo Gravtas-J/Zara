@@ -179,4 +179,4 @@ cython_debug/
 user_profile.txt
 
 user_profile.md
-.vscode/settings.json
+/.vscode/settings.json
