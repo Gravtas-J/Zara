@@ -208,6 +208,33 @@ def write_journal():
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
 
+def process_journal_entries():
+    # Connect to the SQLite database (this will create the database if it does not exist)
+    conn = sqlite3.connect(chromadb_path)
+    cursor = conn.cursor()
+    # # Create a table to store journal entries if it doesn't exist
+    cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
+        id INTEGER PRIMARY KEY,
+        date TEXT,
+        content TEXT
+    )""")
+    # Open the journal file and read its content
+    with open(Journal_loc, 'r', encoding='utf-8') as file:
+        content = file.read()
+
+    # Append the journal file's content to the journal_entries table
+    # Assuming each entry is separated by two newlines and contains a date and content separated by a newline
+    entries = [tuple(entry.split('\n', 1)) for entry in content.strip().split('\n\n') if '\n' in entry]
+    cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
+
+    # Clear the journal file's contents
+    with open(Journal_loc, 'w', encoding='utf-8') as file:
+        file.write('')
+
+    # Commit changes and close the connection
+    conn.commit()
+    conn.close()
+
 
 #=================================================================#
 
@@ -256,45 +283,46 @@ if "Journal" not in st.session_state:
 #============================EMBEDDING FUNCTION =====================================#
 if "embed" not in st.session_state:
     st.session_state['Journal'] = 'done'
-    # Connect to the SQLite database (this will create the database if it does not exist)
-    conn = sqlite3.connect(chromadb_path)
-    cursor = conn.cursor()
+    process_journal_entries()
+    # # Connect to the SQLite database (this will create the database if it does not exist)
+    # conn = sqlite3.connect(chromadb_path)
+    # cursor = conn.cursor()
 
-    # Create a table to store journal entries if it doesn't exist
-    cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
-        id INTEGER PRIMARY KEY,
-        date TEXT,
-        content TEXT
-    )""")
+    # # Create a table to store journal entries if it doesn't exist
+    # cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
+    #     id INTEGER PRIMARY KEY,
+    #     date TEXT,
+    #     content TEXT
+    # )""")
 
-    # Clear the table to ensure the database will only contain the latest entries
-    cursor.execute("DELETE FROM journal_entries")
+    # # Clear the table to ensure the database will only contain the latest entries
+    # cursor.execute("DELETE FROM journal_entries")
 
-    # Open the journal file and read its content
-    with open(Journal_loc, 'r', encoding='utf-8') as file:
-        content = file.read()
+    # # Open the journal file and read its content
+    # with open(Journal_loc, 'r', encoding='utf-8') as file:
+    #     content = file.read()
 
-    # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
-    entries_raw = content.strip().split('\n\n')
+    # # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
+    # entries_raw = content.strip().split('\n\n')
 
-    entries = []
-    for entry_raw in entries_raw:
-        parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
-        if len(parts) == 2:
-            date, content = parts
-        else:
-            # Handle potential formatting issues or incomplete entries
-            # print(f"Skipping incomplete entry: {parts[0]}")
-            continue
+    # entries = []
+    # for entry_raw in entries_raw:
+    #     parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
+    #     if len(parts) == 2:
+    #         date, content = parts
+    #     else:
+    #         # Handle potential formatting issues or incomplete entries
+    #         # print(f"Skipping incomplete entry: {parts[0]}")
+    #         continue
 
-        entries.append((date, content))
+    #     entries.append((date, content))
 
-    # Insert the parsed journal entries into the database
-    cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
+    # # Insert the parsed journal entries into the database
+    # cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
 
-    # Commit changes and close the connection
-    conn.commit()
-    conn.close()
+    # # Commit changes and close the connection
+    # conn.commit()
+    # conn.close()
 
 
 if "timestamp" not in st.session_state:
