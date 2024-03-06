@@ -119,10 +119,6 @@ def calculate_similarity(user_prompt, entries, similarity_threshold=1.5):
     return memory
 
 def assessor():
-    # Read the original user profile data from the file
-    with open(cb_assess_loc, "r") as file:
-        original_data = file.read()
-
     # Prepare the data to be sent to the profiling module
     update_data = [{'role': 'system', 'content': Assessment_full}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
 
@@ -159,19 +155,6 @@ def update_profile():
         # Save the updated data to the user profile file
         with open(userprofile, "w") as file:
             file.write(User_profile_updated)
-
-#     if len(User_profile_updated) < len(original_data):
-#         # Restore the original data from a backup file
-#         with open(backup_userprofile, "r") as backup_file:
-#             restored_data = backup_file.read()
-        
-#         # Save the restored data back to the user profile file
-#         with open(userprofile, "w") as file:
-#             file.write(restored_data)
-#     else:
-#         # Save the updated data to the user profile file
-#         with open(userprofile, "w") as file:
-#             file.write(User_profile_updated)
 
 def backup_profile():
     profile_temp = open_file(userprofile)
@@ -235,7 +218,10 @@ def process_journal_entries():
     conn.commit()
     conn.close()
 
-
+def timestamp():
+    Prev_Chatlog = open_file(Chatlog_loc)
+    if len(Prev_Chatlog) < 1:  # Check if Prev_Chatlog is not empty
+        append_date_time_to_chatlog()
 #=================================================================#
 
 load_dotenv()
@@ -275,66 +261,70 @@ Profile_check = Profile_update+User_pro
 os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 #============================JOURNALING FUNCTION =====================================#
 
-if "Journal" not in st.session_state:
-    st.session_state['Journal'] = "done"
+if "Startup" not in st.session_state:
+    st.session_state['Startup'] = "done"
+    if 'messages' not in st.session_state:
+        st.session_state['messages'] = []
+    if 'chat_log' not in st.session_state:
+        st.session_state["chat_log"] = ""
     backup_profile()
     write_journal()
+    timestamp()
+    process_journal_entries()
 
 #============================EMBEDDING FUNCTION =====================================#
-if "embed" not in st.session_state:
-    st.session_state['Journal'] = 'done'
-    process_journal_entries()
-    # # Connect to the SQLite database (this will create the database if it does not exist)
-    # conn = sqlite3.connect(chromadb_path)
-    # cursor = conn.cursor()
+# if "embed" not in st.session_state:
+#     st.session_state['Journal'] = 'done'
+#     process_journal_entries()
+#     # Connect to the SQLite database (this will create the database if it does not exist)
+#     conn = sqlite3.connect(chromadb_path)
+#     cursor = conn.cursor()
 
-    # # Create a table to store journal entries if it doesn't exist
-    # cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
-    #     id INTEGER PRIMARY KEY,
-    #     date TEXT,
-    #     content TEXT
-    # )""")
+#     # Create a table to store journal entries if it doesn't exist
+#     cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
+#         id INTEGER PRIMARY KEY,
+#         date TEXT,
+#         content TEXT
+#     )""")
 
-    # # Clear the table to ensure the database will only contain the latest entries
-    # cursor.execute("DELETE FROM journal_entries")
+#     # Clear the table to ensure the database will only contain the latest entries
+#     cursor.execute("DELETE FROM journal_entries")
 
-    # # Open the journal file and read its content
-    # with open(Journal_loc, 'r', encoding='utf-8') as file:
-    #     content = file.read()
+#     # Open the journal file and read its content
+#     with open(Journal_loc, 'r', encoding='utf-8') as file:
+#         content = file.read()
 
-    # # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
-    # entries_raw = content.strip().split('\n\n')
+#     # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
+#     entries_raw = content.strip().split('\n\n')
 
-    # entries = []
-    # for entry_raw in entries_raw:
-    #     parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
-    #     if len(parts) == 2:
-    #         date, content = parts
-    #     else:
-    #         # Handle potential formatting issues or incomplete entries
-    #         # print(f"Skipping incomplete entry: {parts[0]}")
-    #         continue
+#     entries = []
+#     for entry_raw in entries_raw:
+#         parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
+#         if len(parts) == 2:
+#             date, content = parts
+#         else:
+#             # Handle potential formatting issues or incomplete entries
+#             # print(f"Skipping incomplete entry: {parts[0]}")
+#             continue
 
-    #     entries.append((date, content))
+#         entries.append((date, content))
 
-    # # Insert the parsed journal entries into the database
-    # cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
+#     # Insert the parsed journal entries into the database
+#     cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
 
-    # # Commit changes and close the connection
-    # conn.commit()
-    # conn.close()
+#     # Commit changes and close the connection
+#     conn.commit()
+#     conn.close()
 
 
-if "timestamp" not in st.session_state:
-    Prev_Chatlog = open_file(Chatlog_loc)
-    if len(Prev_Chatlog) < 1:  # Check if Prev_Chatlog is not empty
-        append_date_time_to_chatlog()
-    st.session_state['timestamp'] = 'done'
+# if "timestamp" not in st.session_state:
+#     timestamp()
+#     st.session_state['timestamp'] = 'done'
 
-if 'messages' not in st.session_state:
-    st.session_state['messages'] = []
-if "chat_log" not in st.session_state:
-    st.session_state["chat_log"] = ""
+# if 'messages' not in st.session_state:
+#     st.session_state['messages'] = []
+# if "chat_log" not in st.session_state:
+#     st.session_state["chat_log"] = ""
 for msg in st.session_state.messages:
     if msg["role"] == "assistant":
         # For assistant messages, use the custom avatar
@@ -397,6 +387,3 @@ if prompt:
     if len(current_Chatlog) > 2500:
         write_journal()
         append_date_time_to_chatlog()
-
-
-
