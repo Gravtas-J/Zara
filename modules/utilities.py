@@ -12,23 +12,28 @@ import faiss
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
 import difflib
-from modules.sim_search_util import *
 
-def GPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
-    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response['choices'][0]['message']['content']
-    return text, response['usage']['total_tokens']
 
-def GPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
-    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response['choices'][0]['message']['content']
-    return text, response['usage']['total_tokens']
 
+model = SentenceTransformer('all-MiniLM-L6-v2')
+chromadb_path = os.path.join('chromadb', 'chromaDB.db')
+
+
+st.set_page_config(layout="wide")
+
+# Basic Utilities 
+# Adding the current date and time at the top of the chatlog
 def append_date_time_to_chatlog():
     with open(Chatlog_loc, "r+") as chatlog_file:
         content = chatlog_file.read()
         chatlog_file.seek(0, 0)
         chatlog_file.write("Chatlog created at: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n\n" + content)
+
+def timestamp():
+    Prev_Chatlog = open_file(Chatlog_loc)
+    if len(Prev_Chatlog) < 1:  # Check if Prev_Chatlog is not empty
+        append_date_time_to_chatlog()
+
 
 def ensure_userprofile_exists(filepath):
     # Check if the file exists
@@ -53,6 +58,21 @@ def ensure_Journal_exists(filepath):
 def open_file(filepath):
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
         return infile.read()
+
+def response_generator(msg_content):
+    for word in msg_content.split():
+        yield word + " "
+        time.sleep(0.1)
+
+def append_to_chatlog(message):
+    # Check if the chatlog file exists, create it if it doesn't
+    try:
+        open(Chatlog_loc, "r").close()
+    except FileNotFoundError:
+        open(Chatlog_loc, "w").close()
+    
+    with open(Chatlog_loc, "a") as chatlog_file:
+        chatlog_file.write(message + "\n")
 
 Update_user = os.path.join('system prompts', 'User_update.md')
 Journaler = os.path.join('system prompts', 'Journaler.md')

@@ -1,5 +1,3 @@
-# from modules.utilities import *
-# from modules.Generatives import *
 import streamlit as st
 from dotenv import load_dotenv
 import os
@@ -22,20 +20,12 @@ chromadb_path = os.path.join('chromadb', 'chromaDB.db')
 
 
 st.set_page_config(layout="wide")
-
-# Basic Utilities 
 # Adding the current date and time at the top of the chatlog
 def append_date_time_to_chatlog():
     with open(Chatlog_loc, "r+") as chatlog_file:
         content = chatlog_file.read()
         chatlog_file.seek(0, 0)
         chatlog_file.write("Chatlog created at: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n\n" + content)
-
-def timestamp():
-    Prev_Chatlog = open_file(Chatlog_loc)
-    if len(Prev_Chatlog) < 1:  # Check if Prev_Chatlog is not empty
-        append_date_time_to_chatlog()
-
 
 def ensure_userprofile_exists(filepath):
     # Check if the file exists
@@ -60,6 +50,16 @@ def ensure_Journal_exists(filepath):
 def open_file(filepath):
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
         return infile.read()
+    
+def GPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
+    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
+    text = response['choices'][0]['message']['content']
+    return text, response['usage']['total_tokens']
+
+def GPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
+    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
+    text = response['choices'][0]['message']['content']
+    return text, response['usage']['total_tokens']
 
 def response_generator(msg_content):
     for word in msg_content.split():
@@ -76,90 +76,6 @@ def append_to_chatlog(message):
     with open(Chatlog_loc, "a") as chatlog_file:
         chatlog_file.write(message + "\n")
 
-
-# Generative functions
-
-def assessor():
-    # Prepare the data to be sent to the profiling module
-    update_data = [{'role': 'system', 'content': Assessment_full}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    
-    # Send the user profile data to the profiling module and get the response
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=update_data, temperature=0, max_tokens=4000)
-    update_assessment = response['choices'][0]['message']['content']
-    # update_assessment, tokens_risk = GPT3(update_data)
-    with open(cb_assess_loc, "w") as file:
-        file.write(update_assessment + "\n")
-
-def update_profile():
-    # Read the original user profile data from the file
-    with open(userprofile, "r") as file:
-        original_data = file.read()
-
-    # Prepare the data to be sent to the profiling module
-    update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=update_data, temperature=0, max_tokens=4000)
-    User_profile_updated = response['choices'][0]['message']['content']
-    # Send the user profile data to the profiling module and get the response
-    # User_profile_updated, tokens_risk = GPT3(update_data)
-
-    # Calculate the number of differences between the original data and the updated data
-    diff = difflib.ndiff(original_data, User_profile_updated)
-    num_differences = len([d for d in diff if d[0] != ' '])
-
-    # Check if the number of differences exceeds 200
-    if num_differences > 200:
-        # Restore the original data from a backup file
-        with open(backup_userprofile, "r") as backup_file:
-            restored_data = backup_file.read()
-        
-        # Save the restored data back to the user profile file
-        with open(userprofile, "w") as file:
-            file.write(restored_data)
-    else:
-        # Save the updated data to the user profile file
-        with open(userprofile, "w") as file:
-            file.write(User_profile_updated)
-
-def backup_profile():
-    profile_temp = open_file(userprofile)
-    with open(backup_userprofile, "w") as backupfile:
-        backupfile.write(profile_temp)   
-
-def update_matrix():
-    Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Update_Person_matrix, temperature=0, max_tokens=4000)
-    Matrix_updated = response['choices'][0]['message']['content']
-    # Matrix_updated, tokens_risk = GPT3(Update_Person_matrix)   
-    with open(User_matrix, "w") as file:
-        file.write(Matrix_updated)
-
-def write_journal():
-    Prev_Chatlog = open_file(Chatlog_loc)
-    if len(Prev_Chatlog) > 50:  # Check if Prev_Chatlog is not empty
-        Journal_writer= open_file(Journaler)
-        # st.write(Prev_Chatlog)
-        Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
-        # st.write(Journal)
-        response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Journal, temperature=0, max_tokens=4000)
-        Update_Journal = response['choices'][0]['message']['content']
-        # st.write(Update_Journal)        
-        try:
-            open(Journal_loc, "r").close()
-        except FileNotFoundError:
-            open(Journal_loc, "w").close()
-        
-        with open(Journal_loc, "a") as Journal_file:  # Changed mode to "a" for appending to the end
-            Journal_file.write("\n" + Update_Journal +"\n")
-
-        with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
-            chat_log_file.write("")
-    else:
-        with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
-            chat_log_file.write("")
-
-
-# DB functions
-
 def fetch_journal_entries():
     """Fetch all journal entries from the database."""
     conn = sqlite3.connect(chromadb_path)
@@ -168,36 +84,6 @@ def fetch_journal_entries():
     conn.close()
     # print(f"Fetched {len(df)} entries")  # Debug print
     return df
-
-
-# Retrieval functions 
-
-def process_journal_entries():
-    # Connect to the SQLite database (this will create the database if it does not exist)
-    conn = sqlite3.connect(chromadb_path)
-    cursor = conn.cursor()
-    # # Create a table to store journal entries if it doesn't exist
-    cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
-        id INTEGER PRIMARY KEY,
-        date TEXT,
-        content TEXT
-    )""")
-    # Open the journal file and read its content
-    with open(Journal_loc, 'r', encoding='utf-8') as file:
-        content = file.read()
-
-    # Append the journal file's content to the journal_entries table
-    # Assuming each entry is separated by two newlines and contains a date and content separated by a newline
-    entries = [tuple(entry.split('\n', 1)) for entry in content.strip().split('\n\n') if '\n' in entry]
-    cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
-
-    # Clear the journal file's contents
-    with open(Journal_loc, 'w', encoding='utf-8') as file:
-        file.write('')
-
-    # Commit changes and close the connection
-    conn.commit()
-    conn.close()
 
 def create_faiss_index(embeddings):
     # Dimension of embeddings
@@ -232,16 +118,120 @@ def calculate_similarity(user_prompt, entries, similarity_threshold=1.5):
     
     return memory
 
+def assessor():
+    # Prepare the data to be sent to the profiling module
+    update_data = [{'role': 'system', 'content': Assessment_full}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
 
+    # Send the user profile data to the profiling module and get the response
+    update_assessment, tokens_risk = GPT3(update_data)
+    with open(cb_assess_loc, "w") as file:
+        file.write(update_assessment + "\n")
 
+def update_profile():
+    # Read the original user profile data from the file
+    with open(userprofile, "r") as file:
+        original_data = file.read()
+
+    # Prepare the data to be sent to the profiling module
+    update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+
+    # Send the user profile data to the profiling module and get the response
+    User_profile_updated, tokens_risk = GPT3(update_data)
+
+    # Calculate the number of differences between the original data and the updated data
+    diff = difflib.ndiff(original_data, User_profile_updated)
+    num_differences = len([d for d in diff if d[0] != ' '])
+
+    # Check if the number of differences exceeds 200
+    if num_differences > 200:
+        # Restore the original data from a backup file
+        with open(backup_userprofile, "r") as backup_file:
+            restored_data = backup_file.read()
+        
+        # Save the restored data back to the user profile file
+        with open(userprofile, "w") as file:
+            file.write(restored_data)
+    else:
+        # Save the updated data to the user profile file
+        with open(userprofile, "w") as file:
+            file.write(User_profile_updated)
+
+def backup_profile():
+    profile_temp = open_file(userprofile)
+    with open(backup_userprofile, "w") as backupfile:
+        backupfile.write(profile_temp)   
+
+def update_matrix():
+    Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+    Matrix_updated, tokens_risk = GPT3(Update_Person_matrix)   
+    with open(User_matrix, "w") as file:
+        file.write(Matrix_updated)
+
+def write_journal():
+    Prev_Chatlog = open_file(Chatlog_loc)
+    if len(Prev_Chatlog) > 50:  # Check if Prev_Chatlog is not empty
+        Journal_writer= open_file(Journaler)
+        # st.write(Prev_Chatlog)
+        Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
+        # st.write(Journal)
+        response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Journal, temperature=0, max_tokens=4000)
+        Update_Journal = response['choices'][0]['message']['content']
+        # st.write(Update_Journal)        
+        try:
+            open(Journal_loc, "r").close()
+        except FileNotFoundError:
+            open(Journal_loc, "w").close()
+        
+        with open(Journal_loc, "a") as Journal_file:  # Changed mode to "a" for appending to the end
+            Journal_file.write("\n" + Update_Journal +"\n")
+
+        with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
+            chat_log_file.write("")
+    else:
+        with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
+            chat_log_file.write("")
+
+def process_journal_entries():
+    # Connect to the SQLite database (this will create the database if it does not exist)
+    conn = sqlite3.connect(chromadb_path)
+    cursor = conn.cursor()
+    # # Create a table to store journal entries if it doesn't exist
+    cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
+        id INTEGER PRIMARY KEY,
+        date TEXT,
+        content TEXT
+    )""")
+    # Open the journal file and read its content
+    with open(Journal_loc, 'r', encoding='utf-8') as file:
+        content = file.read()
+
+    # Append the journal file's content to the journal_entries table
+    # Assuming each entry is separated by two newlines and contains a date and content separated by a newline
+    entries = [tuple(entry.split('\n', 1)) for entry in content.strip().split('\n\n') if '\n' in entry]
+    cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
+
+    # Clear the journal file's contents
+    with open(Journal_loc, 'w', encoding='utf-8') as file:
+        file.write('')
+
+    # Commit changes and close the connection
+    conn.commit()
+    conn.close()
+
+def timestamp():
+    Prev_Chatlog = open_file(Chatlog_loc)
+    if len(Prev_Chatlog) < 1:  # Check if Prev_Chatlog is not empty
+        append_date_time_to_chatlog()
 #=================================================================#
 
 load_dotenv()
+
 ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'user_person_matrix.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'CB_assess.txt'))
 ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
 Journaler = os.path.join('system prompts', 'Journaler.md')
 Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
@@ -257,7 +247,8 @@ assessor_loc = os.path.join('system prompts', 'assessor.md')
 assess_content = open_file(assessor_loc)
 Assessment_full = assess_content + CB_assess
 
-prompt = st.chat_input(key="propmt")
+
+prompt = st.chat_input()
 Profile_update = os.path.join('system prompts', 'User_update.md')
 persona_content = os.path.join('Personas', 'Zara.md')
 User_pro = open_file(userprofile)
@@ -267,7 +258,8 @@ Matrix_writer = Matrix_writer_content + Matrix_content
 Content = persona_content + User_pro + Matrix_content
 Profile_check = Profile_update+User_pro
 
-#============================//Startup Function\\=====================================#
+os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
+#============================JOURNALING FUNCTION =====================================#
 
 if "Startup" not in st.session_state:
     st.session_state['Startup'] = "done"
@@ -279,8 +271,60 @@ if "Startup" not in st.session_state:
     write_journal()
     timestamp()
     process_journal_entries()
-    os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 
+#============================EMBEDDING FUNCTION =====================================#
+# if "embed" not in st.session_state:
+#     st.session_state['Journal'] = 'done'
+#     process_journal_entries()
+#     # Connect to the SQLite database (this will create the database if it does not exist)
+#     conn = sqlite3.connect(chromadb_path)
+#     cursor = conn.cursor()
+
+#     # Create a table to store journal entries if it doesn't exist
+#     cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
+#         id INTEGER PRIMARY KEY,
+#         date TEXT,
+#         content TEXT
+#     )""")
+
+#     # Clear the table to ensure the database will only contain the latest entries
+#     cursor.execute("DELETE FROM journal_entries")
+
+#     # Open the journal file and read its content
+#     with open(Journal_loc, 'r', encoding='utf-8') as file:
+#         content = file.read()
+
+#     # Splitting the entire content by two newlines, assuming this pattern reliably separates entries
+#     entries_raw = content.strip().split('\n\n')
+
+#     entries = []
+#     for entry_raw in entries_raw:
+#         parts = entry_raw.split('\n', 2)  # Split into 2 parts: date and content
+#         if len(parts) == 2:
+#             date, content = parts
+#         else:
+#             # Handle potential formatting issues or incomplete entries
+#             # print(f"Skipping incomplete entry: {parts[0]}")
+#             continue
+
+#         entries.append((date, content))
+
+#     # Insert the parsed journal entries into the database
+#     cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
+
+#     # Commit changes and close the connection
+#     conn.commit()
+#     conn.close()
+
+
+# if "timestamp" not in st.session_state:
+#     timestamp()
+#     st.session_state['timestamp'] = 'done'
+
+# if 'messages' not in st.session_state:
+#     st.session_state['messages'] = []
+# if "chat_log" not in st.session_state:
+#     st.session_state["chat_log"] = ""
 for msg in st.session_state.messages:
     if msg["role"] == "assistant":
         # For assistant messages, use the custom avatar
@@ -291,7 +335,8 @@ for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
 
-#============================//CHATBOT FUNCTION\\=====================================#
+#============================CHATBOT FUNCTION =====================================#
+
 
 if prompt:
     time_right_now = "current time:"+"\n"+datetime.now().strftime("%Y-%m-%d %H:%M:%S")
