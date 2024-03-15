@@ -270,6 +270,8 @@ Profile_check = Profile_update+User_pro
 #============================//Startup Function\\=====================================#
 
 if "Startup" not in st.session_state:
+    os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
+
     st.session_state['Startup'] = "done"
     if 'messages' not in st.session_state:
         st.session_state['messages'] = []
@@ -279,7 +281,6 @@ if "Startup" not in st.session_state:
     write_journal()
     timestamp()
     process_journal_entries()
-    os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 
 for msg in st.session_state.messages:
     if msg["role"] == "assistant":
