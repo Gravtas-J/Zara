@@ -3,6 +3,18 @@ from modules.utilities import *
 KB_DB_Path = os.path.join('chromadb', 'KB_DB.db')
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
+def create_faiss_index(embeddings):
+    # Dimension of embeddings
+    d = embeddings.shape[1]
+    
+    # Creating a FAISS index
+    index = faiss.IndexFlatL2(d)  # Using L2 distance for similarity search
+    
+    # Adding the embeddings to the index
+    index.add(embeddings)
+    
+    return index
+
 def write_KB():
     Prev_Chatlog = open_file(Chatlog_loc)
     if len(Prev_Chatlog) > 50:   # Check if Prev_Chatlog is not empty
@@ -32,7 +44,7 @@ def fetch_KB_entries():
     # print(f"Fetched {len(df)} entries")  # Debug print
     return df
 
-def merge_with_AI(existing_content, new_content):
+def merge_KB(existing_content, new_content): # Previously merge_with_AI
     # Prepare the prompt for the AI
     KB_out = [
         {'role': 'system', 'content': 'Please merge the following two KB entries into a single, coherent entry:'},
@@ -51,7 +63,7 @@ def merge_with_AI(existing_content, new_content):
     merged_content = response.choices[0].message.content
     return merged_content
 
-def split_content_with_AI(merged_content):
+def split_KB(merged_content): #previously split_content_with_AI
     # Prepare the prompt for the AI to split the content
     prompt = "Please split the following content into two distinct, coherent parts:"
     messages = [
@@ -74,7 +86,6 @@ def split_content_with_AI(merged_content):
         parts = [merged_content[:len(merged_content)//2], merged_content[len(merged_content)//2:]]
 
     return parts[0], parts[1]
-
 
 def process_entries(KB_DB_Path, Scratchpad):
     conn = sqlite3.connect(KB_DB_Path)  # Ensure this path is correctly specified
@@ -105,9 +116,9 @@ def process_entries(KB_DB_Path, Scratchpad):
                 if not is_similar:
                     cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title, content))
                 else:
-                    merged_content = merge_with_AI(similar_entry[1], content)
+                    merged_content = merge_KB(similar_entry[1], content)
                     if len(merged_content) > 2000:
-                        part1, part2 = split_content_with_AI(merged_content)
+                        part1, part2 = split_KB(merged_content)
                         cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 1", part1))
                         cursor.execute("INSERT INTO KB_entries (Title, content) VALUES (?, ?)", (Title + " Part 2", part2))
                     else:

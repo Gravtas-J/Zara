@@ -18,8 +18,21 @@ import difflib
 model = SentenceTransformer('all-MiniLM-L6-v2')
 chromadb_path = os.path.join('chromadb', 'chromaDB.db')
 
-
 st.set_page_config(layout="wide")
+
+
+def create_faiss_index(embeddings):
+    # Dimension of embeddings
+    d = embeddings.shape[1]
+    
+    # Creating a FAISS index
+    index = faiss.IndexFlatL2(d)  # Using L2 distance for similarity search
+    
+    # Adding the embeddings to the index
+    index.add(embeddings)
+    
+    return index
+
 
 # Basic Utilities 
 # Adding the current date and time at the top of the chatlog
