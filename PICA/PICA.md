@@ -210,7 +210,7 @@ In the **Persona-Integrated Cognitive Architecture (PICA)**, a variant of explic
 
 3. **Usage**: The detailed profile informs PICA's responses and interactions with the user, aiming to make exchanges more personalized, engaging, and effective. This customization extends to language use, content relevance, and interaction style, adapted to the user's preferences and needs.
 
-``` user profile example
+``` user profile template
 <USER PROFILE START>
 {
   "personal_info": {
@@ -383,14 +383,14 @@ def write_journal():
 
 ```
 
-```example jounral
+```jounral template
 <date> <time>
 Today, I interacted with <user's name>. Our discussion focused on <main subject of the conversation>. For instance, they mentioned that <specific details about the subject from the conversation>.
 
 ``` 
 
 
-3. **Periodicity**: The system records interactions periodically, with the frequency of entries adjusted based on the volume and significance of interactions. This periodic record-keeping ensures a comprehensive yet manageable journal that captures the essence of the system's engagements with users.
+3. **Periodicity**: The system records interactions periodically, with the frequency of entries adjusted based on the volume of interactions. This periodic record-keeping ensures a comprehensive yet manageable journal that captures the essence of the system's engagements with users.
 
 4. **Database Storage**: Journal entries are stored in a structured database, organized by date and user. This organization facilitates efficient retrieval of past interactions, supporting the system's ability to reference previous experiences in future interactions and decisions.
 

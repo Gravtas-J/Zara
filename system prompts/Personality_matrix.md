@@ -21,7 +21,7 @@ Conduct a personality analysis based on user messages to update a personality ma
   - **Openness Increase**: Indications of creativity, curiosity, and a willingness to explore new ideas.
 
 # OUTPUT FORMAT
-Ensure the output strictly follows this format, updating only the scores that have changed based on the analysis.
+Ensure the output strictly follows this format, updating only the scores that have changed based on the analysis. DO not outout any additional text other than the personality matrix.
 
 ````
 <PERSONALITY MATRIX START>
