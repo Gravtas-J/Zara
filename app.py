@@ -36,8 +36,28 @@ def ensure_userprofile_exists(filepath):
         # Create the file since it doesn't exist
         with open(filepath, 'w', encoding='utf-8') as f:
             # You can initialize the file with default content if necessary
-            f.write('')  # Write an empty string or initial content
+            f.write(profile_template)  # Write initial content
 
+def ensure_usermatrix_exists(filepath):
+    # Check if the file exists
+    if not os.path.exists(filepath):
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        # Create the file since it doesn't exist
+        with open(filepath, 'w', encoding='utf-8') as f:
+            # You can initialize the file with default content if necessary
+            f.write(matrix_template)  # Write initial content
+
+def ensure_chatlog_exists(filepath):
+    # Check if the file exists
+    if not os.path.exists(filepath):
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        # Create the file since it doesn't exist
+        with open(filepath, 'w', encoding='utf-8') as f:
+            # You can initialize the file with default content if necessary
+            f.write('')  # Write an empty string
+            
 def ensure_Journal_exists(filepath):
     # Check if the file exists
     if not os.path.exists(filepath):
@@ -109,6 +129,7 @@ def initialize_program():
         
         # Mark the program as initialized
         st.session_state['initialized'] = True
+
 # def create_faiss_index(embeddings):
 #     # Dimension of embeddings
 #     d = embeddings.shape[1]
@@ -120,6 +141,7 @@ def initialize_program():
 #     index.add(embeddings)
     
 #     return index
+        
 def calculate_similarity(user_prompt):
     print(f"Calculating similarity")
     # Ensure the program is initialized
@@ -167,6 +189,7 @@ def calculate_similarity(user_prompt):
 #         memory = "You don't have any relevent memories."
 #     print(f"Most similar entry: {memory}")  # Debug print
 #     return memory
+
 def backup_profile():
     profile_temp = open_file(userprofile)
     with open(backup_userprofile, "w") as backupfile:
@@ -267,56 +290,7 @@ def write_journal():
             chat_log_file.write("")
         print(f"Journal written")
 
-
-#=================================================================#
-
-load_dotenv()
-
-ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
-ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
-ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
-ensure_userprofile_exists(os.path.join('Memories', 'user_person_matrix.txt'))
-openai.api_key = os.getenv("OPENAI_API_KEY")
-Update_user = os.path.join('system prompts', 'User_update.md')
-Journaler = os.path.join('system prompts', 'Journaler.md')
-Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
-Journal_loc = os.path.join('Memories', 'Journal.txt')
-Persona=os.path.join('Personas', 'Zara.md')
-userprofile=os.path.join('Memories', 'user_profile.txt')
-portrait_path = os.path.join('Portrait', 'T.png')
-Thinker_loc = os.path.join('system prompts', 'Thinker.md')
-embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
-User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
-Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
-backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
-backup_user_matrix = os.path.join('Memories', 'user_matrix_backup.txt')
-
-
-prompt = st.chat_input()
-Profile_update = open_file(Update_user)
-persona_content = open_file(Persona)
-User_pro = open_file(userprofile)
-Matrix_writer_content = open_file(Matrix_writer_prompt)
-Matrix_content = open_file(User_matrix)
-Matrix_writer = Matrix_writer_content + Matrix_content
-Content = persona_content + User_pro + Matrix_content
-Profile_check = Profile_update+User_pro
-
-os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
-def main():
-    #============================JOURNALING FUNCTION =====================================#
-
-    if "Journal" not in st.session_state:
-        st.session_state['Journal'] = "done"
-        st.session_state['# of entries'] = ""
-        update_profile()
-        update_matrix()
-        write_journal()
-        print(f'Ready')
-
-    #============================EMBEDDING FUNCTION =====================================#
-    if "embed" not in st.session_state:
-        st.session_state['embed'] = 'done'
+def process_DB_Entries():
         print(f'Processing Jorunal into DB')
         # Connect to the SQLite database (this will create the database if it does not exist)
         conn = sqlite3.connect(chromadb_path)
@@ -345,6 +319,55 @@ def main():
         conn.close()
         print(f'Processing complete')
 
+#=================================================================#
+
+load_dotenv()
+
+ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
+ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
+ensure_userprofile_exists(os.path.join('Memories', 'user_person_matrix.txt'))
+ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
+openai.api_key = os.getenv("OPENAI_API_KEY")
+Update_user = os.path.join('system prompts', 'User_update.md')
+Journaler = os.path.join('system prompts', 'Journaler.md')
+Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
+Journal_loc = os.path.join('Memories', 'Journal.txt')
+Persona=os.path.join('Personas', 'Zara.md')
+userprofile=os.path.join('Memories', 'user_profile.txt')
+portrait_path = os.path.join('Portrait', 'T.png')
+Thinker_loc = os.path.join('system prompts', 'Thinker.md')
+embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
+User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
+Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
+backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
+backup_user_matrix = os.path.join('Memories', 'user_matrix_backup.txt')
+profile_template = open_file(os.path.join('modules', 'STARTUP', 'userprofile.txt'))
+matrix_template = open_file(os.path.join('modules', 'STARTUP', 'usermatrix.txt'))
+
+prompt = st.chat_input()
+Profile_update = open_file(Update_user)
+persona_content = open_file(Persona)
+User_pro = open_file(userprofile)
+Matrix_writer_content = open_file(Matrix_writer_prompt)
+Matrix_content = open_file(User_matrix)
+Matrix_writer = Matrix_writer_content + Matrix_content
+Content = persona_content + User_pro + Matrix_content
+Profile_check = Profile_update+User_pro
+
+os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
+def main():
+    #============================Startup FUNCTION =====================================#
+
+    if "Startup" not in st.session_state:
+        st.session_state['Startup'] = "done"
+        st.session_state['# of entries'] = ""
+        update_profile()
+        update_matrix()
+        write_journal()
+        process_DB_Entries()
+        print(f'Ready')
+
+    #============================EMBEDDING FUNCTION =====================================#
 
     if "timestamp" not in st.session_state:
         append_date_time_to_chatlog()
