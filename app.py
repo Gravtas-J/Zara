@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import time
 import sqlite3
-# import spacy
 import pandas as pd
 import faiss
 from sentence_transformers import SentenceTransformer, util
@@ -97,14 +96,17 @@ def append_to_chatlog(message):
     with open(Chatlog_loc, "a") as chatlog_file:
         chatlog_file.write(message + "\n")
 
-
 def fetch_journal_entries():
     print(f"Fetching entries")
+    start_time = time.time()  # Record the start time
     conn = sqlite3.connect(chromadb_path)
     query = "SELECT id, date, content FROM journal_entries"
     df = pd.read_sql_query(query, conn)
     conn.close()
     print(f"Fetched {len(df)} entries")  # Debug print
+    end_time = time.time()  # Record the end time
+    duration = end_time - start_time  # Calculate the duration
+    print(f'Entries fetched in in {duration:.2f} seconds')
     st.session_state['# of entries'] = df
     st.session_state['journal_entries'] = df
     return df
@@ -116,12 +118,12 @@ def create_faiss_index(embeddings):
     return index
 
 def init_FAISS():
+        start_time = time.time()  # Record the start time
     # if 'initialized' not in st.session_state:
         # Fetch or load entries
         entries = fetch_journal_entries() if 'journal_entries' not in st.session_state else st.session_state['journal_entries']
         
         # Generate embeddings for the entries
-        # Assuming model is already defined and can process batch inputs
         entries_embeddings = np.array(model.encode(entries['content'].tolist()))
         
         # Create and store FAISS index
@@ -129,9 +131,13 @@ def init_FAISS():
         
         # Mark the program as initialized
         st.session_state['initialized'] = True
+        end_time = time.time()  # Record the end time
+        duration = end_time - start_time  # Calculate the duration
+        print(f'FAISS initalised in {duration:.2f} seconds')
         
 def calculate_similarity(user_prompt):
     print(f"Calculating similarity")
+    start_time = time.time()  # Record the start time
     # Ensure the program is initialized
     if 'initialized' not in st.session_state:
         init_FAISS()
@@ -154,40 +160,24 @@ def calculate_similarity(user_prompt):
         memory = "You don't have any relevant memories."
     
     print(f"Most similar entry: {memory}")  # Debug print
+    end_time = time.time()  # Record the end time
+    duration = end_time - start_time  # Calculate the duration
+    print(f'Processing complete in {duration:.2f} seconds')
     return memory
-
-# def calculate_similarity(user_prompt, entries):
-#     print(f"Calculating similarity")
-#     # Convert user prompt and entries to embeddings
-#     prompt_embedding = model.encode([user_prompt])
-#     entry_embeddings = np.array(model.encode(entries['content'].tolist()))
-    
-#     # Create a FAISS index for the entry embeddings
-#     index = create_faiss_index(entry_embeddings)
-    
-#     # Search the index for the most similar entries
-#     D, I = index.search(prompt_embedding, 1)  # Search for the top 1 closest entries
-    
-#     # Get the most similar entry details
-#     if len(I) > 0:
-#         most_similar_entry_index = I[0][0]
-#         most_similar_distance = D[0][0]
-#         memory = f"{entries.iloc[most_similar_entry_index]['date']}\n{entries.iloc[most_similar_entry_index]['content']}"
-#     else:
-#         memory = "You don't have any relevent memories."
-#     print(f"Most similar entry: {memory}")  # Debug print
-#     return memory
 
 def backup_profile():
     profile_temp = open_file(userprofile)
     with open(backup_userprofile, "w") as backupfile:
         backupfile.write(profile_temp)   
+
 def backup_matrix():
     matrix_temp = open_file(User_matrix)
     with open(backup_userprofile, "w") as backupfile:
         backupfile.write(matrix_temp)  
+
 def update_profile():
     print(f"Updating Profile")
+    start_time = time.time()  # Record the start time
     # Read the original user profile data from the file
     with open(userprofile, "r") as file:
         original_data = file.read()
@@ -196,8 +186,6 @@ def update_profile():
     update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
     response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=update_data, temperature=0, max_tokens=4000)
     User_profile_updated = response['choices'][0]['message']['content']
-    # Send the user profile data to the profiling module and get the response
-    # User_profile_updated, tokens_risk = GPT3(update_data)
 
     # Calculate the number of differences between the original data and the updated data
     diff = difflib.ndiff(original_data, User_profile_updated)
@@ -216,11 +204,14 @@ def update_profile():
         # Save the updated data to the user profile file
         with open(userprofile, "w") as file:
             file.write(User_profile_updated)
-    print(f"profile updated")
+    end_time = time.time()  # Record the end time
+    duration = end_time - start_time  # Calculate the duration
+    print(f'profile updated in {duration:.2f} seconds')
     
 
 def update_matrix():
     print(f"Updating Matrix")
+    start_time = time.time()  # Record the start time
     with open(User_matrix, "r") as file:
         original_data = file.read()
     Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
@@ -242,12 +233,15 @@ def update_matrix():
         # Save the updated data to the user profile file
         with open(User_matrix, "w") as file:
             file.write(Matrix_updated)
-    print(f"Matrix updated")
+    end_time = time.time()  # Record the end time
+    duration = end_time - start_time  # Calculate the duration
+    print(f'Matrix updated in {duration:.2f} seconds')
 
 def write_journal():
     print(f"Writing Journal")
     Prev_Chatlog = open_file(Chatlog_loc)
     if Prev_Chatlog.strip():  # Check if Prev_Chatlog is not empty
+        start_time = time.time()  # Record the start time
         Journal_writer= open_file(Journaler)
         # st.write(Prev_Chatlog)
         Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
@@ -267,36 +261,40 @@ def write_journal():
 
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
-        print(f"Journal written")
+        end_time = time.time()  # Record the end time
+        duration = end_time - start_time  # Calculate the duration
+        print(f'Journal written in {duration:.2f} seconds')
 
 def process_DB_Entries():
-        print(f'Processing Jorunal into DB')
-        # Connect to the SQLite database (this will create the database if it does not exist)
-        conn = sqlite3.connect(chromadb_path)
-        cursor = conn.cursor()
-        # # Create a table to store journal entries if it doesn't exist
-        cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
-            id INTEGER PRIMARY KEY,
-            date TEXT,
-            content TEXT
-        )""")
-        # Open the journal file and read its content
-        with open(Journal_loc, 'r', encoding='utf-8') as file:
-            content = file.read()
+    start_time = time.time()  # Record the start time
+    print(f'Processing Jorunal into DB')
+    # Connect to the SQLite database (this will create the database if it does not exist)
+    conn = sqlite3.connect(chromadb_path)
+    cursor = conn.cursor()
+    # # Create a table to store journal entries if it doesn't exist
+    cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
+        id INTEGER PRIMARY KEY,
+        date TEXT,
+        content TEXT
+    )""")
+    # Open the journal file and read its content
+    with open(Journal_loc, 'r', encoding='utf-8') as file:
+        content = file.read()
 
-        # Append the journal file's content to the journal_entries table
-        # Assuming each entry is separated by two newlines and contains a date and content separated by a newline
-        entries = [tuple(entry.split('\n', 1)) for entry in content.strip().split('\n\n') if '\n' in entry]
-        cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
+    # Append the journal file's content to the journal_entries table
+    entries = [tuple(entry.split('\n', 1)) for entry in content.strip().split('\n\n') if '\n' in entry]
+    cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
 
-        # Clear the journal file's contents
-        with open(Journal_loc, 'w', encoding='utf-8') as file:
-            file.write('')
+    # Clear the journal file's contents
+    with open(Journal_loc, 'w', encoding='utf-8') as file:
+        file.write('')
 
-        # Commit changes and close the connection
-        conn.commit()
-        conn.close()
-        print(f'Processing complete')
+    # Commit changes and close the connection
+    conn.commit()
+    conn.close()
+    end_time = time.time()  # Record the end time
+    duration = end_time - start_time  # Calculate the duration
+    print(f'Processing complete in {duration:.2f} seconds')
 
 def timeout_tasks():
     # Check if the 'last_action_timestamp' is set in the session state
@@ -363,6 +361,8 @@ def main():
     #============================Startup FUNCTION =====================================#
 
     if "Startup" not in st.session_state:
+        print(f'Beginning startup')
+        start_time = time.time()  # Record the start time
         st.session_state['Startup'] = "done"
         st.session_state['# of entries'] = ""
         update_profile()
@@ -370,7 +370,9 @@ def main():
         write_journal()
         process_DB_Entries()
         init_FAISS()
-        print(f'Ready')
+        end_time = time.time()  # Record the end time
+        duration = end_time - start_time  # Calculate the duration
+        print(f'Startup completed in {duration:.2f} seconds, Ready to rock and roll')
 
     #============================EMBEDDING FUNCTION =====================================#
 
