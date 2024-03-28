@@ -434,7 +434,7 @@ def main():
         append_to_chatlog(f"Assistant: {msg_content}")
 
         current_Chatlog = open_file(Chatlog_loc)
-        if len(current_Chatlog) > 2500:
+        if len(current_Chatlog) > 2500: #TODO - I have to change this to a time based function that will split the chatlog into chunks of 2500 char then run each function. I want it to do it when there ahsn't been a response of about 5 min or soemthign so it happens when the user isn't there to experience the slowness
             write_journal()
             append_date_time_to_chatlog()
             update_profile()
