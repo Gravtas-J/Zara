@@ -4,7 +4,7 @@ import os
 import openai
 from time import time
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import sqlite3
 # import spacy
@@ -115,8 +115,8 @@ def create_faiss_index(embeddings):
     index.add(embeddings)
     return index
 
-def initialize_program():
-    if 'initialized' not in st.session_state:
+def init_FAISS():
+    # if 'initialized' not in st.session_state:
         # Fetch or load entries
         entries = fetch_journal_entries() if 'journal_entries' not in st.session_state else st.session_state['journal_entries']
         
@@ -129,24 +129,12 @@ def initialize_program():
         
         # Mark the program as initialized
         st.session_state['initialized'] = True
-
-# def create_faiss_index(embeddings):
-#     # Dimension of embeddings
-#     d = embeddings.shape[1]
-    
-#     # Creating a FAISS index
-#     index = faiss.IndexFlatL2(d)  # Using L2 distance for similarity search
-    
-#     # Adding the embeddings to the index
-#     index.add(embeddings)
-    
-#     return index
         
 def calculate_similarity(user_prompt):
     print(f"Calculating similarity")
     # Ensure the program is initialized
     if 'initialized' not in st.session_state:
-        initialize_program()
+        init_FAISS()
     
     # Convert user prompt to embedding
     prompt_embedding = model.encode([user_prompt])
@@ -229,15 +217,6 @@ def update_profile():
         with open(userprofile, "w") as file:
             file.write(User_profile_updated)
     print(f"profile updated")
-
-# def update_profile():
-#     print(f"Updating Profile")
-#     Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-#     User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
-#     with open(userprofile, "w") as file:
-#         file.write(User_profile_updated)
-#     print(f"profile updated")
-
     
 
 def update_matrix():
@@ -319,6 +298,26 @@ def process_DB_Entries():
         conn.close()
         print(f'Processing complete')
 
+def timeout_tasks():
+    # Check if the 'last_action_timestamp' is set in the session state
+    if 'last_action_timestamp' in st.session_state:
+        # Calculate the time elapsed since the last action
+        elapsed_time = datetime.now() - st.session_state['last_action_timestamp']
+        # Check if more than 5 minutes have elapsed
+        if elapsed_time > timedelta(minutes=5) and st.session_state.get('has_timeout_run') == 'no':
+            update_profile()
+            update_matrix()
+            write_journal()
+            process_DB_Entries()
+            init_FAISS()
+            # Optionally, you can update the 'last_action_timestamp' to the current time
+            st.session_state['last_action_timestamp'] = datetime.now()
+            st.session_state['has_timeout_run'] = "yes"
+            print("Tasks executed after 5 minutes of inactivity.")
+    else:
+        # If 'last_action_timestamp' is not set, initialize it to the current time
+        st.session_state['last_action_timestamp'] = datetime.now()
+
 #=================================================================#
 
 load_dotenv()
@@ -356,6 +355,11 @@ Profile_check = Profile_update+User_pro
 
 os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 def main():
+    if 'last_action_timestamp' not in st.session_state:
+        st.session_state['last_action_timestamp'] = datetime.now()
+    if 'has_timeout_run' not in st.session_state:
+        st.session_state['has_timeout_run'] = "no"    
+    timeout_tasks()
     #============================Startup FUNCTION =====================================#
 
     if "Startup" not in st.session_state:
@@ -365,6 +369,7 @@ def main():
         update_matrix()
         write_journal()
         process_DB_Entries()
+        init_FAISS()
         print(f'Ready')
 
     #============================EMBEDDING FUNCTION =====================================#
@@ -391,6 +396,7 @@ def main():
 
 
     if prompt:
+        st.session_state['has_timeout_run'] = "no"
         with st.chat_message("user",):
             st.write(prompt)
         time_right_now = "current time:"+"\n"+datetime.now().strftime("%Y-%m-%d %H:%M:%S")
