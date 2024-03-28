@@ -12,17 +12,17 @@ import pandas as pd
 import faiss
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
-import cProfile
+import difflib
 
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
-# nlp = spacy.load("en_core_web_md")  # Make sure to use a model with word vectors
 chromadb_path = os.path.join('chromadb', 'chromaDB.db')
 
 
 st.set_page_config(layout="wide")
-# Adding the current date and time at the top of the chatlog
+
 def append_date_time_to_chatlog():
+        # Adding the current date and time at the top of the chatlog
     with open(Chatlog_loc, "r+") as chatlog_file:
         content = chatlog_file.read()
         chatlog_file.seek(0, 0)
@@ -167,23 +167,79 @@ def calculate_similarity(user_prompt):
 #         memory = "You don't have any relevent memories."
 #     print(f"Most similar entry: {memory}")  # Debug print
 #     return memory
-
+def backup_profile():
+    profile_temp = open_file(userprofile)
+    with open(backup_userprofile, "w") as backupfile:
+        backupfile.write(profile_temp)   
+def backup_matrix():
+    matrix_temp = open_file(User_matrix)
+    with open(backup_userprofile, "w") as backupfile:
+        backupfile.write(matrix_temp)  
 def update_profile():
     print(f"Updating Profile")
-    Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
-    with open(userprofile, "w") as file:
-        file.write(User_profile_updated)
+    # Read the original user profile data from the file
+    with open(userprofile, "r") as file:
+        original_data = file.read()
+
+    # Prepare the data to be sent to the profiling module
+    update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=update_data, temperature=0, max_tokens=4000)
+    User_profile_updated = response['choices'][0]['message']['content']
+    # Send the user profile data to the profiling module and get the response
+    # User_profile_updated, tokens_risk = GPT3(update_data)
+
+    # Calculate the number of differences between the original data and the updated data
+    diff = difflib.ndiff(original_data, User_profile_updated)
+    num_differences = len([d for d in diff if d[0] != ' '])
+
+    # Check if the number of differences exceeds 200
+    if num_differences > 200:
+        # Restore the original data from a backup file
+        with open(backup_userprofile, "r") as backup_file:
+            restored_data = backup_file.read()
+        
+        # Save the restored data back to the user profile file
+        with open(userprofile, "w") as file:
+            file.write(restored_data)
+    else:
+        # Save the updated data to the user profile file
+        with open(userprofile, "w") as file:
+            file.write(User_profile_updated)
     print(f"profile updated")
+
+# def update_profile():
+#     print(f"Updating Profile")
+#     Update_user_profile = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+#     User_profile_updated, tokens_risk = chatbotGPT3(Update_user_profile)   
+#     with open(userprofile, "w") as file:
+#         file.write(User_profile_updated)
+#     print(f"profile updated")
 
     
 
 def update_matrix():
     print(f"Updating Matrix")
+    with open(User_matrix, "r") as file:
+        original_data = file.read()
     Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
     Matrix_updated, tokens_risk = chatbotGPT4(Update_Person_matrix)   
-    with open(User_matrix, "w") as file:
-        file.write(Matrix_updated)
+    # Calculate the number of differences between the original data and the updated data
+    diff = difflib.ndiff(original_data, Matrix_updated)
+    num_differences = len([d for d in diff if d[0] != ' '])
+
+    # Check if the number of differences exceeds 200
+    if num_differences > 200:
+        # Restore the original data from a backup file
+        with open(backup_user_matrix, "r") as backup_file:
+            restored_data = backup_file.read()
+        
+        # Save the restored data back to the user profile file
+        with open(User_matrix, "w") as file:
+            file.write(restored_data)
+    else:
+        # Save the updated data to the user profile file
+        with open(User_matrix, "w") as file:
+            file.write(Matrix_updated)
     print(f"Matrix updated")
 
 def write_journal():
@@ -232,7 +288,8 @@ Thinker_loc = os.path.join('system prompts', 'Thinker.md')
 embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
 User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
 Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
-
+backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
+backup_user_matrix = os.path.join('Memories', 'user_matrix_backup.txt')
 
 
 prompt = st.chat_input()
@@ -251,12 +308,16 @@ def main():
 
     if "Journal" not in st.session_state:
         st.session_state['Journal'] = "done"
+        st.session_state['# of entries'] = ""
         update_profile()
         update_matrix()
         write_journal()
+        print(f'Ready')
 
     #============================EMBEDDING FUNCTION =====================================#
     if "embed" not in st.session_state:
+        st.session_state['embed'] = 'done'
+        print(f'Processing Jorunal into DB')
         # Connect to the SQLite database (this will create the database if it does not exist)
         conn = sqlite3.connect(chromadb_path)
         cursor = conn.cursor()
@@ -282,6 +343,7 @@ def main():
         # Commit changes and close the connection
         conn.commit()
         conn.close()
+        print(f'Processing complete')
 
 
     if "timestamp" not in st.session_state:
