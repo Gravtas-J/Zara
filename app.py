@@ -14,9 +14,14 @@ import numpy as np
 import difflib
 
 
+def open_file(filepath):
+    with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
+        return infile.read()
+
 model = SentenceTransformer('all-MiniLM-L6-v2')
 chromadb_path = os.path.join('chromadb', 'chromaDB.db')
-
+profile_template = open_file(os.path.join('modules', 'STARTUP', 'userprofile.txt'))
+matrix_template = open_file(os.path.join('modules', 'STARTUP', 'usermatrix.txt'))
 
 st.set_page_config(layout="wide")
 
@@ -67,9 +72,7 @@ def ensure_Journal_exists(filepath):
             # You can initialize the file with default content if necessary
             f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n" + "I am Zara, I am excited to be helping whoever i am speaking with. I will be poliet but firm with who i am speaking with and trust that my memories are correct.")  # Write an empty string or initial content
 
-def open_file(filepath):
-    with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
-        return infile.read()
+
     
 def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
     response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
@@ -319,10 +322,11 @@ def timeout_tasks():
 #=================================================================#
 
 load_dotenv()
-
+ensure_chatlog_exists(os.path.join('Memories', 'chatlog.txt'))
 ensure_userprofile_exists(os.path.join('Memories', 'user_profile.txt'))
-ensure_userprofile_exists(os.path.join('Memories', 'chatlog.txt'))
-ensure_userprofile_exists(os.path.join('Memories', 'user_person_matrix.txt'))
+ensure_userprofile_exists(os.path.join('Memories', 'user_profile_backup.txt'))
+ensure_usermatrix_exists(os.path.join('Memories', 'user_matrix.txt'))
+ensure_usermatrix_exists(os.path.join('Memories', 'user_matrix_backup.txt'))
 ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 Update_user = os.path.join('system prompts', 'User_update.md')
@@ -333,13 +337,13 @@ Persona=os.path.join('Personas', 'Zara.md')
 userprofile=os.path.join('Memories', 'user_profile.txt')
 portrait_path = os.path.join('Portrait', 'T.png')
 Thinker_loc = os.path.join('system prompts', 'Thinker.md')
-embed_loc = os.path.join('Memories', 'Journal_embedded.pkl')
-User_matrix = os.path.join('Memories', 'user_person_matrix.txt')
+User_matrix = os.path.join('Memories', 'user_matrix.txt')
 Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
 backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
 backup_user_matrix = os.path.join('Memories', 'user_matrix_backup.txt')
-profile_template = open_file(os.path.join('modules', 'STARTUP', 'userprofile.txt'))
-matrix_template = open_file(os.path.join('modules', 'STARTUP', 'usermatrix.txt'))
+profile_template_loc = os.path.join('modules', 'STARTUP', 'userprofile.txt')
+
+
 
 prompt = st.chat_input()
 Profile_update = open_file(Update_user)
@@ -353,11 +357,7 @@ Profile_check = Profile_update+User_pro
 
 os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 def main():
-    if 'last_action_timestamp' not in st.session_state:
-        st.session_state['last_action_timestamp'] = datetime.now()
-    if 'has_timeout_run' not in st.session_state:
-        st.session_state['has_timeout_run'] = "no"    
-    timeout_tasks()
+
     #============================Startup FUNCTION =====================================#
 
     if "Startup" not in st.session_state:
@@ -375,6 +375,11 @@ def main():
         print(f'Startup completed in {duration:.2f} seconds, Ready to rock and roll')
 
     #============================EMBEDDING FUNCTION =====================================#
+    if 'last_action_timestamp' not in st.session_state:
+        st.session_state['last_action_timestamp'] = datetime.now()
+    if 'has_timeout_run' not in st.session_state:
+        st.session_state['has_timeout_run'] = "yes"    
+    timeout_tasks()
 
     if "timestamp" not in st.session_state:
         append_date_time_to_chatlog()
