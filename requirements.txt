@@ -8,4 +8,6 @@ spacy
 sentence_transformers
 numpy
 faiss
-
+sqlite3
+time
+difflib
