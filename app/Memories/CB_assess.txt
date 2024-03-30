@@ -1,9 +1,0 @@
-{
-  "chatbotGoalAssessment": {
-    "goals": [
-      {
-        "description": "Providing prompt and friendly responses to engage the user and encourage interaction, aiming to establish a positive and welcoming atmosphere for the conversation."
-      }
-    ]
-  }
-}
