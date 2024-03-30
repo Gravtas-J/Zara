@@ -1,13 +1,44 @@
 import os
 from datetime import datetime
+import streamlit as st
+import time
+from modules.profile import update_profile, update_matrix
+from modules.journal import write_journal, process_DB_Entries, append_to_chatlog
+from modules.faiss import init_FAISS, calculate_similarity
+from modules.journal import chromadb_path
+from modules.utils import Chatlog_loc, profile_template, matrix_template, chromadb_path, persona_content, User_pro
 
-def open_file(filepath):
-    with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
-        return infile.read()
 
-Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
-profile_template = open_file(os.path.join('modules', 'STARTUP', 'userprofile.txt'))
-matrix_template = open_file(os.path.join('modules', 'STARTUP', 'usermatrix.txt'))
+def startup():
+    if "Startup" not in st.session_state:
+        os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
+        # Create a placeholder for the startup message
+        startup_message = st.empty()
+        # Display the startup message
+        startup_message.info('Beginning startup', icon=None)
+        print(f'Beginning startup')
+        start_time = time.time()  # Record the start time
+        st.session_state['Startup'] = "done"
+        st.session_state['# of entries'] = ""
+        update_profile()
+        update_matrix()
+        write_journal()
+        process_DB_Entries()
+        init_FAISS()
+        # Calculate and print the duration
+        end_time = time.time()  # Record the end time
+        duration = end_time - start_time  # Calculate the duration
+        # Wait for 3 seconds
+        time.sleep(3)
+        # Clear the initial startup message
+        startup_message.empty()
+        # Optionally, show a new message that the startup has completed, then clear it
+        completed_message = st.empty()
+        completed_message.info(f'Startup completed in {duration:.2f} seconds, Ready to rock and roll', icon=None)
+        print(f'Startup completed in {duration:.2f} seconds, Ready to rock and roll')
+        # Wait for another duration before clearing the completed message
+        time.sleep(3)
+        completed_message.empty()
 
 def append_date_time_to_chatlog():
         # Adding the current date and time at the top of the chatlog
