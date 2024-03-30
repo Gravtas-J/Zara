@@ -4,26 +4,35 @@ import openai
 
 from datetime import datetime
 from dotenv import load_dotenv
+from modules.initial import ensure_chatlog_exists, ensure_userprofile_exists, ensure_usermatrix_exists, ensure_Journal_exists
 
-from modules.startup import init_states, startup, ensure_userprofile_exists, ensure_usermatrix_exists, ensure_chatlog_exists, ensure_Journal_exists, append_date_time_to_chatlog
-from modules.chatbot import response_generator, show_msgs
-from modules.journal import write_journal, append_to_chatlog
-from modules.faiss import calculate_similarity
-from modules.profile import update_profile, update_matrix
-from modules.timeout import timeout_tasks
-from modules.utils import open_file, portrait_path, Chatlog_loc, Content
-
-st.set_page_config(layout="wide", page_title='Zara')
-startup()
-load_dotenv()
 ensure_chatlog_exists(os.path.join('app', 'Memories', 'chatlog.txt'))
 ensure_userprofile_exists(os.path.join('app', 'Memories', 'user_profile.txt'))
 ensure_userprofile_exists(os.path.join('app', 'Memories', 'user_profile_backup.txt'))
 ensure_usermatrix_exists(os.path.join('app', 'Memories', 'user_matrix.txt'))
 ensure_usermatrix_exists(os.path.join('app', 'Memories', 'user_matrix_backup.txt'))
 ensure_Journal_exists(os.path.join('app', 'Memories', 'Journal.txt'))
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
+from modules.startup import init_states, startup, append_date_time_to_chatlog
+from modules.chatbot import response_generator, show_msgs
+from modules.journal import write_journal, append_to_chatlog
+from modules.faiss import calculate_similarity
+from modules.profile import update_profile, update_matrix
+from modules.timeout import timeout_tasks
+from modules.utils import open_file, Chatlog_loc, Content, portrait_path
+
+
+
+
+
 def main():
+    st.set_page_config(layout="wide", page_title='Zara')
+
+    load_dotenv()
+
+
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    startup()
     init_states() 
     show_msgs()
     
