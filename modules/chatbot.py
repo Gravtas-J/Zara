@@ -2,7 +2,9 @@
 import openai
 import time
 import streamlit as st
-from modules.utils import portrait_path
+import os
+
+portrait_path = os.path.join('app', 'Protrait', 'T.png')
 
 def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
     response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
