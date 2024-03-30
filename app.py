@@ -1,325 +1,19 @@
 import streamlit as st
-from dotenv import load_dotenv
 import os
 import openai
-from time import time
+
+from datetime import datetime
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
-import time
-import sqlite3
-import pandas as pd
-import faiss
-from sentence_transformers import SentenceTransformer, util
-import numpy as np
-import difflib
 
-
-def open_file(filepath):
-    with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
-        return infile.read()
-
-model = SentenceTransformer('all-MiniLM-L6-v2')
-chromadb_path = os.path.join('chromadb', 'chromaDB.db')
-profile_template = open_file(os.path.join('modules', 'STARTUP', 'userprofile.txt'))
-matrix_template = open_file(os.path.join('modules', 'STARTUP', 'usermatrix.txt'))
+from modules.startup import init_states, startup, ensure_userprofile_exists, ensure_usermatrix_exists, ensure_chatlog_exists, ensure_Journal_exists, append_date_time_to_chatlog
+from modules.chatbot import response_generator, show_msgs
+from modules.journal import write_journal, append_to_chatlog
+from modules.faiss import calculate_similarity
+from modules.profile import update_profile, update_matrix
+from modules.timeout import timeout_tasks
+from modules.utils import open_file, portrait_path, Chatlog_loc, Content
 
 st.set_page_config(layout="wide")
-
-def append_date_time_to_chatlog():
-        # Adding the current date and time at the top of the chatlog
-    with open(Chatlog_loc, "r+") as chatlog_file:
-        content = chatlog_file.read()
-        chatlog_file.seek(0, 0)
-        chatlog_file.write("Chatlog created at: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n\n" + content)
-
-def ensure_userprofile_exists(filepath):
-    # Check if the file exists
-    if not os.path.exists(filepath):
-        # Create the directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        # Create the file since it doesn't exist
-        with open(filepath, 'w', encoding='utf-8') as f:
-            # You can initialize the file with default content if necessary
-            f.write(profile_template)  # Write initial content
-
-def ensure_usermatrix_exists(filepath):
-    # Check if the file exists
-    if not os.path.exists(filepath):
-        # Create the directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        # Create the file since it doesn't exist
-        with open(filepath, 'w', encoding='utf-8') as f:
-            # You can initialize the file with default content if necessary
-            f.write(matrix_template)  # Write initial content
-
-def ensure_chatlog_exists(filepath):
-    # Check if the file exists
-    if not os.path.exists(filepath):
-        # Create the directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        # Create the file since it doesn't exist
-        with open(filepath, 'w', encoding='utf-8') as f:
-            # You can initialize the file with default content if necessary
-            f.write('')  # Write an empty string
-            
-def ensure_Journal_exists(filepath):
-    # Check if the file exists
-    if not os.path.exists(filepath):
-        # Create the directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        # Create the file since it doesn't exist
-        with open(filepath, 'w', encoding='utf-8') as f:
-            # You can initialize the file with default content if necessary
-            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n" + "I am Zara, I am excited to be helping whoever i am speaking with. I will be poliet but firm with who i am speaking with and trust that my memories are correct.")  # Write an empty string or initial content
-
-
-    
-def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
-    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response['choices'][0]['message']['content']
-    return text, response['usage']['total_tokens']
-
-def chatbotGPT3(conversation, model="gpt-3.5-turbo-0125", temperature=0, max_tokens=4000):
-    response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
-    text = response['choices'][0]['message']['content']
-    return text, response['usage']['total_tokens']
-
-def response_generator(msg_content):
-    for word in msg_content.split():
-        yield word + " "
-        time.sleep(0.1)
-
-def append_to_chatlog(message):
-    # Check if the chatlog file exists, create it if it doesn't
-    try:
-        open(Chatlog_loc, "r").close()
-    except FileNotFoundError:
-        open(Chatlog_loc, "w").close()
-    
-    with open(Chatlog_loc, "a") as chatlog_file:
-        chatlog_file.write(message + "\n")
-
-def fetch_journal_entries():
-    print(f"Fetching entries")
-    start_time = time.time()  # Record the start time
-    conn = sqlite3.connect(chromadb_path)
-    query = "SELECT id, date, content FROM journal_entries"
-    df = pd.read_sql_query(query, conn)
-    conn.close()
-    print(f"Fetched {len(df)} entries")  # Debug print
-    end_time = time.time()  # Record the end time
-    duration = end_time - start_time  # Calculate the duration
-    print(f'Entries fetched in in {duration:.2f} seconds')
-    st.session_state['# of entries'] = df
-    st.session_state['journal_entries'] = df
-    return df
-
-def create_faiss_index(embeddings):
-    dimension = embeddings.shape[1]  # Assuming embeddings is a 2D numpy array
-    index = faiss.IndexFlatL2(dimension)
-    index.add(embeddings)
-    return index
-
-def init_FAISS():
-        start_time = time.time()  # Record the start time
-    # if 'initialized' not in st.session_state:
-        # Fetch or load entries
-        entries = fetch_journal_entries() if 'journal_entries' not in st.session_state else st.session_state['journal_entries']
-        
-        # Generate embeddings for the entries
-        entries_embeddings = np.array(model.encode(entries['content'].tolist()))
-        
-        # Create and store FAISS index
-        st.session_state['faiss_index'] = create_faiss_index(entries_embeddings)
-        
-        # Mark the program as initialized
-        st.session_state['initialized'] = True
-        end_time = time.time()  # Record the end time
-        duration = end_time - start_time  # Calculate the duration
-        print(f'FAISS initalised in {duration:.2f} seconds')
-        
-def calculate_similarity(user_prompt):
-    print(f"Calculating similarity")
-    start_time = time.time()  # Record the start time
-    # Ensure the program is initialized
-    if 'initialized' not in st.session_state:
-        init_FAISS()
-    
-    # Convert user prompt to embedding
-    prompt_embedding = model.encode([user_prompt])
-    
-    # Access the FAISS index from st.session_state
-    index = st.session_state['faiss_index']
-    entries = st.session_state['journal_entries']
-    
-    # Search the index for the most similar entries
-    D, I = index.search(prompt_embedding, 1)  # Search for the top 1 closest entries
-    
-    # Process and return the most similar entry details
-    if len(I) > 0:
-        most_similar_entry_index = I[0][0]
-        memory = f"{entries.iloc[most_similar_entry_index]['date']}\n{entries.iloc[most_similar_entry_index]['content']}"
-    else:
-        memory = "You don't have any relevant memories."
-    
-    print(f"Most similar entry: {memory}")  # Debug print
-    end_time = time.time()  # Record the end time
-    duration = end_time - start_time  # Calculate the duration
-    print(f'Processing complete in {duration:.2f} seconds')
-    return memory
-
-def backup_profile():
-    profile_temp = open_file(userprofile)
-    with open(backup_userprofile, "w") as backupfile:
-        backupfile.write(profile_temp)   
-
-def backup_matrix():
-    matrix_temp = open_file(User_matrix)
-    with open(backup_userprofile, "w") as backupfile:
-        backupfile.write(matrix_temp)  
-
-def update_profile():
-    print(f"Updating Profile")
-    start_time = time.time()  # Record the start time
-    # Read the original user profile data from the file
-    with open(userprofile, "r") as file:
-        original_data = file.read()
-
-    # Prepare the data to be sent to the profiling module
-    update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=update_data, temperature=0, max_tokens=4000)
-    User_profile_updated = response['choices'][0]['message']['content']
-
-    # Calculate the number of differences between the original data and the updated data
-    diff = difflib.ndiff(original_data, User_profile_updated)
-    num_differences = len([d for d in diff if d[0] != ' '])
-
-    # Check if the number of differences exceeds 200
-    if num_differences > 200:
-        # Restore the original data from a backup file
-        with open(backup_userprofile, "r") as backup_file:
-            restored_data = backup_file.read()
-        
-        # Save the restored data back to the user profile file
-        with open(userprofile, "w") as file:
-            file.write(restored_data)
-    else:
-        # Save the updated data to the user profile file
-        with open(userprofile, "w") as file:
-            file.write(User_profile_updated)
-    end_time = time.time()  # Record the end time
-    duration = end_time - start_time  # Calculate the duration
-    print(f'profile updated in {duration:.2f} seconds')
-    
-
-def update_matrix():
-    print(f"Updating Matrix")
-    start_time = time.time()  # Record the start time
-    with open(User_matrix, "r") as file:
-        original_data = file.read()
-    Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    Matrix_updated, tokens_risk = chatbotGPT4(Update_Person_matrix)   
-    # Calculate the number of differences between the original data and the updated data
-    diff = difflib.ndiff(original_data, Matrix_updated)
-    num_differences = len([d for d in diff if d[0] != ' '])
-
-    # Check if the number of differences exceeds 200
-    if num_differences > 200:
-        # Restore the original data from a backup file
-        with open(backup_user_matrix, "r") as backup_file:
-            restored_data = backup_file.read()
-        
-        # Save the restored data back to the user profile file
-        with open(User_matrix, "w") as file:
-            file.write(restored_data)
-    else:
-        # Save the updated data to the user profile file
-        with open(User_matrix, "w") as file:
-            file.write(Matrix_updated)
-    end_time = time.time()  # Record the end time
-    duration = end_time - start_time  # Calculate the duration
-    print(f'Matrix updated in {duration:.2f} seconds')
-
-def write_journal():
-    print(f"Writing Journal")
-    Prev_Chatlog = open_file(Chatlog_loc)
-    if Prev_Chatlog.strip():  # Check if Prev_Chatlog is not empty
-        start_time = time.time()  # Record the start time
-        Journal_writer= open_file(Journaler)
-        # st.write(Prev_Chatlog)
-        Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
-        # st.write(Journal)
-        response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Journal, temperature=0, max_tokens=4000)
-        text = response['choices'][0]['message']['content']
-        # st.write(Update_Journal)
-        Update_Journal = text
-        
-        try:
-            open(Journal_loc, "r").close()
-        except FileNotFoundError:
-            open(Journal_loc, "w").close()
-        
-        with open(Journal_loc, "a") as Journal_file:  # Changed mode to "a" for appending to the end
-            Journal_file.write("\n" + Update_Journal +"\n")
-
-        with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
-            chat_log_file.write("")
-        end_time = time.time()  # Record the end time
-        duration = end_time - start_time  # Calculate the duration
-        print(f'Journal written in {duration:.2f} seconds')
-
-def process_DB_Entries():
-    start_time = time.time()  # Record the start time
-    print(f'Processing Jorunal into DB')
-    # Connect to the SQLite database (this will create the database if it does not exist)
-    conn = sqlite3.connect(chromadb_path)
-    cursor = conn.cursor()
-    # # Create a table to store journal entries if it doesn't exist
-    cursor.execute("""CREATE TABLE IF NOT EXISTS journal_entries (
-        id INTEGER PRIMARY KEY,
-        date TEXT,
-        content TEXT
-    )""")
-    # Open the journal file and read its content
-    with open(Journal_loc, 'r', encoding='utf-8') as file:
-        content = file.read()
-
-    # Append the journal file's content to the journal_entries table
-    entries = [tuple(entry.split('\n', 1)) for entry in content.strip().split('\n\n') if '\n' in entry]
-    cursor.executemany("INSERT INTO journal_entries (date, content) VALUES (?, ?)", entries)
-
-    # Clear the journal file's contents
-    with open(Journal_loc, 'w', encoding='utf-8') as file:
-        file.write('')
-
-    # Commit changes and close the connection
-    conn.commit()
-    conn.close()
-    end_time = time.time()  # Record the end time
-    duration = end_time - start_time  # Calculate the duration
-    print(f'Processing complete in {duration:.2f} seconds')
-
-def timeout_tasks():
-    # Check if the 'last_action_timestamp' is set in the session state
-    if 'last_action_timestamp' in st.session_state:
-        # Calculate the time elapsed since the last action
-        elapsed_time = datetime.now() - st.session_state['last_action_timestamp']
-        # Check if more than 5 minutes have elapsed
-        if elapsed_time > timedelta(minutes=5) and st.session_state.get('has_timeout_run') == 'no':
-            update_profile()
-            update_matrix()
-            write_journal()
-            process_DB_Entries()
-            init_FAISS()
-            # Optionally, you can update the 'last_action_timestamp' to the current time
-            st.session_state['last_action_timestamp'] = datetime.now()
-            st.session_state['has_timeout_run'] = "yes"
-            print("Tasks executed after 5 minutes of inactivity.")
-    else:
-        # If 'last_action_timestamp' is not set, initialize it to the current time
-        st.session_state['last_action_timestamp'] = datetime.now()
-
-#=================================================================#
 
 load_dotenv()
 ensure_chatlog_exists(os.path.join('Memories', 'chatlog.txt'))
@@ -328,80 +22,15 @@ ensure_userprofile_exists(os.path.join('Memories', 'user_profile_backup.txt'))
 ensure_usermatrix_exists(os.path.join('Memories', 'user_matrix.txt'))
 ensure_usermatrix_exists(os.path.join('Memories', 'user_matrix_backup.txt'))
 ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
-openai.api_key = os.getenv("OPENAI_API_KEY")
-Update_user = os.path.join('system prompts', 'User_update.md')
-Journaler = os.path.join('system prompts', 'Journaler.md')
-Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
-Journal_loc = os.path.join('Memories', 'Journal.txt')
-Persona=os.path.join('Personas', 'Zara.md')
-userprofile=os.path.join('Memories', 'user_profile.txt')
-portrait_path = os.path.join('Portrait', 'T.png')
-Thinker_loc = os.path.join('system prompts', 'Thinker.md')
-User_matrix = os.path.join('Memories', 'user_matrix.txt')
-Matrix_writer_prompt = os.path.join('system prompts', 'Personality_matrix.md')
-backup_userprofile = os.path.join('Memories', 'user_profile_backup.txt')
-backup_user_matrix = os.path.join('Memories', 'user_matrix_backup.txt')
-profile_template_loc = os.path.join('modules', 'STARTUP', 'userprofile.txt')
 
-
-
-prompt = st.chat_input()
-Profile_update = open_file(Update_user)
-persona_content = open_file(Persona)
-User_pro = open_file(userprofile)
-Matrix_writer_content = open_file(Matrix_writer_prompt)
-Matrix_content = open_file(User_matrix)
-Matrix_writer = Matrix_writer_content + Matrix_content
-Content = persona_content + User_pro + Matrix_content
-Profile_check = Profile_update+User_pro
-
-os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
 def main():
-
-    #============================Startup FUNCTION =====================================#
-
-    if "Startup" not in st.session_state:
-        print(f'Beginning startup')
-        start_time = time.time()  # Record the start time
-        st.session_state['Startup'] = "done"
-        st.session_state['# of entries'] = ""
-        update_profile()
-        update_matrix()
-        write_journal()
-        process_DB_Entries()
-        init_FAISS()
-        end_time = time.time()  # Record the end time
-        duration = end_time - start_time  # Calculate the duration
-        print(f'Startup completed in {duration:.2f} seconds, Ready to rock and roll')
-
-    #============================EMBEDDING FUNCTION =====================================#
-    if 'last_action_timestamp' not in st.session_state:
-        st.session_state['last_action_timestamp'] = datetime.now()
-    if 'has_timeout_run' not in st.session_state:
-        st.session_state['has_timeout_run'] = "yes"    
+    init_states() 
+    show_msgs()
+    startup()
     timeout_tasks()
-
-    if "timestamp" not in st.session_state:
-        append_date_time_to_chatlog()
-        st.session_state['timestamp'] = 'done'
-
-    if 'messages' not in st.session_state:
-        st.session_state['messages'] = []
-    if "chat_log" not in st.session_state:
-        st.session_state["chat_log"] = ""
-    for msg in st.session_state.messages:
-        if msg["role"] == "assistant":
-            # For assistant messages, use the custom avatar
-            with st.chat_message("assistant", avatar=portrait_path):
-                st.write(msg["content"])
-        else:
-            # For user messages, display as usual
-            with st.chat_message(msg["role"]):
-                st.write(msg["content"])
-
+    prompt = st.chat_input()
+    
     #============================CHATBOT FUNCTION =====================================#
-
-
     if prompt:
         st.session_state['has_timeout_run'] = "no"
         with st.chat_message("user",):
@@ -413,9 +42,6 @@ def main():
         st.sidebar.write(memory)
         st.sidebar.write(len(je))
         st.session_state.messages.append({"role": "user", "content": prompt})
-        # Display user message in chat message container
-
-
         # followed by the actual chat messages exchanged in the session.
         system_prompt = {
             "role": "system",
@@ -436,9 +62,7 @@ def main():
         
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": msg_content, })
-
-
-            # Convert the chat log into a string, store it in the session state.
+        # Convert the chat log into a string, store it in the session state.
         chat_log = "<<BEGIN CHATLOG>>" +"\n".join([f"{msg['role'].title()}: {msg['content']}" for msg in st.session_state.messages])+ "<<END CHATLOG>>"
         st.session_state['chat_log'] = chat_log
         
@@ -455,5 +79,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
