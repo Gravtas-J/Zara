@@ -13,7 +13,7 @@ from modules.profile import update_profile, update_matrix
 from modules.timeout import timeout_tasks
 from modules.utils import open_file, portrait_path, Chatlog_loc, Content
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_title='Zara')
 
 load_dotenv()
 ensure_chatlog_exists(os.path.join('Memories', 'chatlog.txt'))
@@ -22,7 +22,7 @@ ensure_userprofile_exists(os.path.join('Memories', 'user_profile_backup.txt'))
 ensure_usermatrix_exists(os.path.join('Memories', 'user_matrix.txt'))
 ensure_usermatrix_exists(os.path.join('Memories', 'user_matrix_backup.txt'))
 ensure_Journal_exists(os.path.join('Memories', 'Journal.txt'))
-
+openai.api_key = os.getenv("OPENAI_API_KEY")
 def main():
     init_states() 
     show_msgs()
