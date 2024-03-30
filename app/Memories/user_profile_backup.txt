@@ -1,0 +1,58 @@
+```
+<USER PROFILE START>
+{
+  "personal_info": {
+    "name": "Jesse",
+    "age": 32,
+    "gender": "",
+    "location": ""
+  },
+  "preferences": {
+    "food": {
+      "likes": [],
+      "dislikes": []
+    },
+    "music": {
+      "genres": [],
+      "artists": []
+    },
+    "hobbies": ["Creating chatbots", "Playing D&D", "Exercising", "Reading books", "Learning new things"],
+    "entertainment": {
+      "movies": [],
+      "tvShows": [],
+      "books": ["The Richest Man in Babylon"]
+    }
+  },
+  "personal_values": {
+    "important_life_events": ["Creating a comfortable living space", "Creating chatbot Zara"],
+    "goals": {
+      "short_term": ["Creating a comfortable living space", "Improving upstairs environment", "Trying heat reflecting window films or thermal curtains", "Working on chatbot persona", "Upgrading chatbot Zara", "Moving to GPT3.5 turbo"],
+      "long_term": ["Creating advanced chatbots", "Developing a chatbot with memory capabilities"]
+    },
+    "aspirations": ["Creating advanced chatbots", "Developing a chatbot with memory capabilities", "Refining chatbot persona"],
+    "fears": [],
+    "motivations": ["Desire for a comfortable living environment", "Interest in chatbot development", "Creating a chatbot with memory", "Helping others through chatbots", "Curiosity", "Feeling of purpose", "Desire to validate perceived understanding", "Cost efficiency", "Reflecting on life choices", "Contemplating actions and decisions in life", "Resilience", "Determination"]
+  },
+  "interpersonal_relations": {
+    "family": ["Father in law", "Wife - Helene", "Daughter - Alex"],
+    "friends": [],
+    "relationship_status": "Married"
+  },
+  "communication_preferences": {
+    "preferred_channels": [],
+    "communication_style": ""
+  },
+  "experience_and_memories": {
+    "memorable_moments": ["Creating a comfortable living space", "Finishing chatbot Zara"],
+    "lessons_learned": ["Respecting boundaries related to ownership", "Managing heat in living spaces", "Chatbot development", "Balancing work and relaxation", "Understanding AI Systems"],
+    "life_changing_experiences": ["The moment chatbots became smart"]
+  },
+  "desires_and_needs": {
+    "emotional_needs": ["Need for cooperation from family members", "Sense of accomplishment from creating chatbots"],
+    "physical_needs": ["Comfortable living environment", "Cooler upstairs environment"],
+    "intellectual_needs": ["Challenges in chatbot development"],
+    "spiritual_needs": []
+  }
+}
+<USER PROFILE END>
+```
