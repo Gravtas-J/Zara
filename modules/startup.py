@@ -3,11 +3,23 @@ from datetime import datetime
 import streamlit as st
 import time
 from modules.profile import update_profile, update_matrix
-from modules.journal import write_journal, process_DB_Entries, append_to_chatlog
-from modules.faiss import init_FAISS, calculate_similarity
+from modules.journal import write_journal, process_DB_Entries
+from modules.faiss import init_FAISS
 from modules.journal import chromadb_path
 from modules.utils import Chatlog_loc, profile_template, matrix_template, chromadb_path, persona_content, User_pro
 
+def init_states():
+    if "timestamp" not in st.session_state:
+        append_date_time_to_chatlog()
+        st.session_state['timestamp'] = 'done'
+    if 'messages' not in st.session_state:
+        st.session_state['messages'] = []
+    if "chat_log" not in st.session_state:
+        st.session_state["chat_log"] = ""
+    if 'last_action_timestamp' not in st.session_state:
+        st.session_state['last_action_timestamp'] = datetime.now()
+    if 'has_timeout_run' not in st.session_state:
+        st.session_state['has_timeout_run'] = "yes"
 
 def startup():
     if "Startup" not in st.session_state:
