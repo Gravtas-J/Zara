@@ -2,8 +2,9 @@ import difflib
 import openai
 import time
 import streamlit as st
+import os
 from modules.chatbot import chatbotGPT4
-from modules.utils import open_file, backup_userprofile, User_matrix, userprofile, Update_user,  backup_user_matrix, Matrix_writer_prompt, Matrix_content, Matrix_writer_content, Profile_update, User_pro, Profile_check, Matrix_writer
+from modules.utils import open_file, backup_userprofile, User_matrix, userprofile, backup_user_matrix,  Profile_check, Matrix_writer
 
 def backup_profile():
     profile_temp = open_file(userprofile)
