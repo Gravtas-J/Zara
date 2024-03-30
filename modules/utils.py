@@ -34,9 +34,3 @@ persona_content = open_file(Persona)
 Matrix_writer = Matrix_writer_content + Matrix_content
 
 chromadb_path = os.path.join('chromadb', 'chromaDB.db')
-persona_content = open_file(os.path.join('Personas', 'Zara.md'))
-User_pro = open_file(os.path.join('Memories', 'user_profile.txt'))
-portrait_path = os.path.join('Portrait', 'T.png')
-Matrix_content = open_file(os.path.join('Memories', 'user_matrix.txt'))
-Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
-Content = persona_content + User_pro + Matrix_content
