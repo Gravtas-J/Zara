@@ -2,18 +2,8 @@ import sqlite3
 import pandas as pd
 import time
 import streamlit as st
-import os
 import openai
-
-chromadb_path = os.path.join('chromadb', 'chromaDB.db')
-Chatlog_loc = os.path.join('Memories', 'chatlog.txt')
-Journal_loc = os.path.join('Memories', 'Journal.txt')
-Journaler = os.path.join('system prompts', 'Journaler.md')
-
-
-def open_file(filepath):
-    with open(filepath, 'r', encoding='utf-8', errors='ignore') as infile:
-        return infile.read()
+from modules.utils import chromadb_path, Chatlog_loc, Journal_loc, Journaler, open_file
 
 def append_to_chatlog(message):
     # Check if the chatlog file exists, create it if it doesn't
