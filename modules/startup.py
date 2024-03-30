@@ -8,6 +8,8 @@ from modules.faiss import init_FAISS
 from modules.journal import chromadb_path
 from modules.utils import Chatlog_loc, profile_template, matrix_template, chromadb_path, persona_content, User_pro
 
+
+
 def init_states():
     if "timestamp" not in st.session_state:
         append_date_time_to_chatlog()
@@ -22,6 +24,7 @@ def init_states():
         st.session_state['has_timeout_run'] = "yes"
 
 def startup():
+    
     if "Startup" not in st.session_state:
         os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
         # Create a placeholder for the startup message
@@ -59,42 +62,5 @@ def append_date_time_to_chatlog():
         chatlog_file.seek(0, 0)
         chatlog_file.write("Chatlog created at: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n\n" + content)
 
-def ensure_userprofile_exists(filepath):
-    # Check if the file exists
-    if not os.path.exists(filepath):
-        # Create the directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        # Create the file since it doesn't exist
-        with open(filepath, 'w', encoding='utf-8') as f:
-            # You can initialize the file with default content if necessary
-            f.write(profile_template)  # Write initial content
 
-def ensure_usermatrix_exists(filepath):
-    # Check if the file exists
-    if not os.path.exists(filepath):
-        # Create the directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        # Create the file since it doesn't exist
-        with open(filepath, 'w', encoding='utf-8') as f:
-            # You can initialize the file with default content if necessary
-            f.write(matrix_template)  # Write initial content
 
-def ensure_chatlog_exists(filepath):
-    # Check if the file exists
-    if not os.path.exists(filepath):
-        # Create the directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        # Create the file since it doesn't exist
-        with open(filepath, 'w', encoding='utf-8') as f:
-            # You can initialize the file with default content if necessary
-            f.write('')  # Write an empty string
-            
-def ensure_Journal_exists(filepath):
-    # Check if the file exists
-    if not os.path.exists(filepath):
-        # Create the directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        # Create the file since it doesn't exist
-        with open(filepath, 'w', encoding='utf-8') as f:
-            # You can initialize the file with default content if necessary
-            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n" + "I am Zara, I am excited to be helping whoever i am speaking with. I will be poliet but firm with who i am speaking with and trust that my memories are correct.")  # Write an empty string or initial content
