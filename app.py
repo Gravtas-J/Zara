@@ -14,7 +14,7 @@ ensure_usermatrix_exists(os.path.join('app', 'Memories', 'user_matrix_backup.txt
 ensure_Journal_exists(os.path.join('app', 'Memories', 'Journal.txt'))
 
 from modules.startup import init_states, startup, append_date_time_to_chatlog
-from modules.chatbot import response_generator, show_msgs
+from modules.chatbot import response_generator, show_msgs, greet
 from modules.journal import write_journal, append_to_chatlog
 from modules.faiss import calculate_similarity
 from modules.profile import update_profile, update_matrix
@@ -29,9 +29,10 @@ def main():
     st.set_page_config(layout="wide", page_title='Zara')
     load_dotenv()
     openai.api_key = os.getenv("OPENAI_API_KEY")
-    startup()
     init_states() 
+    startup()
     show_msgs()
+    greet()
     timeout_tasks()
     prompt = st.chat_input()
     #============================CHATBOT FUNCTION =====================================#
@@ -59,10 +60,11 @@ def main():
         )
         msg_content = response.choices[0].message["content"]
         # Display assistant response in chat message container with streamed output
+        st.session_state.messages.append({"role": "assistant", "content": msg_content, })
         with st.chat_message("assistant", avatar=portrait_path):
             st.write_stream(response_generator(msg_content))
         # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": msg_content, })
+
         # Convert the chat log into a string, store it in the session state.
         chat_log = "<<BEGIN CHATLOG>>" +"\n".join([f"{msg['role'].title()}: {msg['content']}" for msg in st.session_state.messages])+ "<<END CHATLOG>>"
         st.session_state['chat_log'] = chat_log
