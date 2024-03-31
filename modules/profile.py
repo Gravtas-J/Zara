@@ -18,16 +18,17 @@ def backup_matrix():
 
 def update_profile():
     print(f"Updating Profile")
+    # startup_message = st.empty()
+    # startup_message.info('Updating profile', icon=None)
     start_time = time.time()  # Record the start time
     # Read the original user profile data from the file
     with open(userprofile, "r") as file:
         original_data = file.read()
-
+    # Clear the initial startup message
     # Prepare the data to be sent to the profiling module
     update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
     response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=update_data, temperature=0, max_tokens=4000)
     User_profile_updated = response['choices'][0]['message']['content']
-
     # Calculate the number of differences between the original data and the updated data
     diff = difflib.ndiff(original_data, User_profile_updated)
     num_differences = len([d for d in diff if d[0] != ' '])
@@ -47,10 +48,17 @@ def update_profile():
             file.write(User_profile_updated)
     end_time = time.time()  # Record the end time
     duration = end_time - start_time  # Calculate the duration
+    # startup_message.empty()
+    # completed_message = st.empty()
+    # completed_message.info(f'profile updated in {duration:.2f} seconds', icon=None)
     print(f'profile updated in {duration:.2f} seconds')
+    # time.sleep(2)
+    # completed_message.empty()
 
 def update_matrix():
     print(f"Updating Matrix")
+    # startup_message = st.empty()
+    # startup_message.info('Updating User Matrix', icon=None)
     start_time = time.time()  # Record the start time
     with open(User_matrix, "r") as file:
         original_data = file.read()
@@ -75,4 +83,9 @@ def update_matrix():
             file.write(Matrix_updated)
     end_time = time.time()  # Record the end time
     duration = end_time - start_time  # Calculate the duration
+    # startup_message.empty()
+    # completed_message = st.empty()
+    # completed_message.info(f'Matrix updated in {duration:.2f} seconds', icon=None)
+    # time.sleep(2)
+    # completed_message.empty()
     print(f'Matrix updated in {duration:.2f} seconds')

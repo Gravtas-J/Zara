@@ -26,6 +26,7 @@ def init_states():
 def startup():
     
     if "Startup" not in st.session_state:
+        st.session_state['Startup'] = "done"
         os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
         # Create a placeholder for the startup message
         startup_message = st.empty()
@@ -33,7 +34,7 @@ def startup():
         startup_message.info('Beginning startup', icon=None)
         print(f'Beginning startup')
         start_time = time.time()  # Record the start time
-        st.session_state['Startup'] = "done"
+
         st.session_state['# of entries'] = ""
         update_profile()
         update_matrix()
