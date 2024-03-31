@@ -17,8 +17,8 @@ def append_to_chatlog(message):
 
 def fetch_journal_entries():
     print(f"Fetching entries")
-    startup_message = st.empty()
-    startup_message.info('Updating profile', icon=None)
+    # startup_message = st.empty()
+    # startup_message.info('Updating profile', icon=None)
     start_time = time.time()  # Record the start time
     conn = sqlite3.connect(chromadb_path)
     query = "SELECT id, date, content FROM journal_entries"
@@ -27,11 +27,11 @@ def fetch_journal_entries():
     print(f"Fetched {len(df)} entries")  # Debug print
     end_time = time.time()  # Record the end time
     duration = end_time - start_time  # Calculate the duration
-    startup_message.empty()
-    completed_message = st.empty()
-    completed_message.info(f'Entries fetched in in {duration:.2f} seconds', icon=None)
-    time.sleep(2)
-    completed_message.empty()
+    # startup_message.empty()
+    # completed_message = st.empty()
+    # completed_message.info(f'Entries fetched in in {duration:.2f} seconds', icon=None)
+    # time.sleep(2)
+    # completed_message.empty()
     print(f'Entries fetched in in {duration:.2f} seconds')
     st.session_state['# of entries'] = df
     st.session_state['journal_entries'] = df
