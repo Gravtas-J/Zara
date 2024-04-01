@@ -1,5 +1,8 @@
 import streamlit as st
 import os
+icon = os.path.join('app', 'Portrait', 'icon.ico')
+st.set_page_config(layout="wide", page_title='Zara', page_icon= icon)
+
 import openai
 from PIL import Image
 from datetime import datetime
@@ -22,9 +25,6 @@ from modules.profile import update_profile, update_matrix
 from modules.timeout import timeout_tasks
 from modules.utils import open_file, Chatlog_loc, Content, portrait_path
 
-
-
-st.set_page_config(layout="wide", page_title='Zara')
 
 hide_streamlit_style = """
             <style>
@@ -67,7 +67,8 @@ def main():
     load_dotenv()
     openai.api_key = os.getenv("OPENAI_API_KEY")
     init_states() 
-    startup()
+    if "Startup" not in st.session_state:
+        startup()
     # with col1:
     #     st.image(image, )
     prompt = st.chat_input()
@@ -118,10 +119,9 @@ def main():
         current_Chatlog = open_file(Chatlog_loc)
         if len(current_Chatlog) > 2500: #TODO - I have to change this to a time based function that will split the chatlog into chunks of 2500 char then run each function. I want it to do it when there ahsn't been a response of about 5 min or soemthign so it happens when the user isn't there to experience the slowness
             print(f'chatlog too full, clearing')
-            write_journal()
-            append_date_time_to_chatlog()
             update_profile()
             update_matrix()
+            write_journal()
 
 if __name__ == "__main__":
     main()
