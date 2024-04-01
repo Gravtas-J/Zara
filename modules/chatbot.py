@@ -3,7 +3,9 @@ import openai
 import time
 import streamlit as st
 import os
-from modules.utils import User_pro, Chatlog_loc, persona_content, portrait_path
+import anthropic
+from dotenv import load_dotenv
+from modules.utils import User_pro, Chatlog_loc, persona_content, portrait_path, Matrix_writer
 
 
 
@@ -16,6 +18,24 @@ def append_to_chatlog(message):
     
     with open(Chatlog_loc, "a") as chatlog_file:
         chatlog_file.write(message + "\n")
+
+def ant_opus(conversation, model="claude-3-haiku-20240307", temperature=0, max_tokens=4000):
+    load_dotenv()
+    ant_api = os.getenv("ANTHROPIC_API_KEY")
+    client = anthropic.Anthropic(
+        # defaults to os.environ.get("ANTHROPIC_API_KEY")
+        api_key=ant_api,
+    )
+    response = client.messages.create(
+        model=model,
+        max_tokens=max_tokens,
+        system=Matrix_writer,
+        temperature=temperature,
+        messages=conversation
+    )
+    msg_content = response.content[0].text
+    return msg_content
+
 
 def chatbotGPT4(conversation, model="gpt-4", temperature=0, max_tokens=4000):
     response = openai.ChatCompletion.create(model=model, messages=conversation, temperature=temperature, max_tokens=max_tokens)
