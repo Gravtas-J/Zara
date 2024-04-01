@@ -51,7 +51,7 @@ if "%major%"=="3" if "%minor%"=="11" (
     powershell -ExecutionPolicy Bypass -File "%script_dir%createShortcut.ps1"
 
     echo Setup Complete! Open App using shortcut on desktop named "Run Zara"
-
+    pause
 ) else (
     echo Your Python version is not 3.11.x. (%pyversion%)
     echo Please install Python 3.11.x to continue.
