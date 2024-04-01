@@ -3,7 +3,15 @@ import pandas as pd
 import time
 import streamlit as st
 import openai
+from datetime import datetime
 from modules.utils import chromadb_path, Chatlog_loc, Journal_loc, Journaler, open_file
+
+def append_date_time_to_chatlog():
+        # Adding the current date and time at the top of the chatlog
+    with open(Chatlog_loc, "r+") as chatlog_file:
+        content = chatlog_file.read()
+        chatlog_file.seek(0, 0)
+        chatlog_file.write("Chatlog created at: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n\n" + content)
 
 def append_to_chatlog(message):
     # Check if the chatlog file exists, create it if it doesn't
@@ -101,6 +109,7 @@ def write_journal():
 
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
+        append_date_time_to_chatlog()
         end_time = time.time()  # Record the end time
         duration = end_time - start_time  # Calculate the duration
         # startup_message.empty()
