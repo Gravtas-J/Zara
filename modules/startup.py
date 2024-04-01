@@ -12,7 +12,7 @@ from modules.utils import Chatlog_loc, profile_template, matrix_template, chroma
 
 def init_states():
     if "timestamp" not in st.session_state:
-        append_date_time_to_chatlog()
+        # append_date_time_to_chatlog()
         st.session_state['timestamp'] = 'done'
     if 'messages' not in st.session_state:
         st.session_state['messages'] = []
@@ -24,7 +24,6 @@ def init_states():
         st.session_state['has_timeout_run'] = "yes"
 
 def startup():
-    
     if "Startup" not in st.session_state:
         st.session_state['Startup'] = "done"
         os.makedirs(os.path.dirname(chromadb_path), exist_ok=True)
@@ -34,7 +33,6 @@ def startup():
         startup_message.info('Beginning startup', icon=None)
         print(f'Beginning startup')
         start_time = time.time()  # Record the start time
-
         st.session_state['# of entries'] = ""
         update_profile()
         update_matrix()
