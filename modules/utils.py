@@ -9,7 +9,6 @@ def open_file(filepath):
 
 
 Chatlog_loc = os.path.join('app', 'Memories', 'chatlog.txt')
-Chatlog_loc = os.path.join('app', 'Memories', 'chatlog.txt')
 Journal_loc = os.path.join('app', 'Memories', 'Journal.txt')
 
 userprofile=os.path.join('app', 'Memories', 'user_profile.txt')
