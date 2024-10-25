@@ -3,7 +3,15 @@ import pandas as pd
 import time
 import streamlit as st
 import openai
+from datetime import datetime
 from modules.utils import chromadb_path, Chatlog_loc, Journal_loc, Journaler, open_file
+
+def append_date_time_to_chatlog():
+        # Adding the current date and time at the top of the chatlog
+    with open(Chatlog_loc, "r+") as chatlog_file:
+        content = chatlog_file.read()
+        chatlog_file.seek(0, 0)
+        chatlog_file.write("Chatlog created at: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n\n" + content)
 
 def append_to_chatlog(message):
     # Check if the chatlog file exists, create it if it doesn't
@@ -17,6 +25,8 @@ def append_to_chatlog(message):
 
 def fetch_journal_entries():
     print(f"Fetching entries")
+    # startup_message = st.empty()
+    # startup_message.info('Updating profile', icon=None)
     start_time = time.time()  # Record the start time
     conn = sqlite3.connect(chromadb_path)
     query = "SELECT id, date, content FROM journal_entries"
@@ -25,6 +35,11 @@ def fetch_journal_entries():
     print(f"Fetched {len(df)} entries")  # Debug print
     end_time = time.time()  # Record the end time
     duration = end_time - start_time  # Calculate the duration
+    # startup_message.empty()
+    # completed_message = st.empty()
+    # completed_message.info(f'Entries fetched in in {duration:.2f} seconds', icon=None)
+    # time.sleep(2)
+    # completed_message.empty()
     print(f'Entries fetched in in {duration:.2f} seconds')
     st.session_state['# of entries'] = df
     st.session_state['journal_entries'] = df
@@ -33,6 +48,8 @@ def fetch_journal_entries():
 def process_DB_Entries():
     start_time = time.time()  # Record the start time
     print(f'Processing Jorunal into DB')
+    # startup_message = st.empty()
+    # startup_message.info('Processing Jorunal into DB', icon=None)
     # Connect to the SQLite database (this will create the database if it does not exist)
     conn = sqlite3.connect(chromadb_path)
     cursor = conn.cursor()
@@ -59,10 +76,17 @@ def process_DB_Entries():
     conn.close()
     end_time = time.time()  # Record the end time
     duration = end_time - start_time  # Calculate the duration
+    # startup_message.empty()
+    # completed_message = st.empty()
+    # completed_message.info(f'Processing complete in {duration:.2f} seconds', icon=None)
+    # time.sleep(2)
+    # completed_message.empty()
     print(f'Processing complete in {duration:.2f} seconds')
 
 def write_journal():
     print(f"Writing Journal")
+    # startup_message = st.empty()
+    # startup_message.info('Writing Journal', icon=None)
     Prev_Chatlog = open_file(Chatlog_loc)
     if Prev_Chatlog.strip():  # Check if Prev_Chatlog is not empty
         start_time = time.time()  # Record the start time
@@ -85,6 +109,12 @@ def write_journal():
 
         with open(Chatlog_loc, "w", encoding='utf-8') as chat_log_file:
             chat_log_file.write("")
+        append_date_time_to_chatlog()
         end_time = time.time()  # Record the end time
         duration = end_time - start_time  # Calculate the duration
+        # startup_message.empty()
+        # completed_message = st.empty()
+        # completed_message.info(f'Journal written in {duration:.2f} seconds', icon=None)
+        # time.sleep(2)
+        # completed_message.empty()
         print(f'Journal written in {duration:.2f} seconds')
