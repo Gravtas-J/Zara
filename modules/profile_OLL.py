@@ -3,7 +3,7 @@ import openai
 import time
 import streamlit as st
 import os
-from modules.chatbot import chatbotGPT4
+from modules.chatbot import chatbotGPT4, chat_with_ollama
 from modules.utils import open_file, backup_userprofile, User_matrix, userprofile, backup_user_matrix,  Profile_check, Matrix_writer
 
 def backup_profile():
@@ -25,8 +25,8 @@ def update_profile():
 
     # Prepare the data to be sent to the profiling module
     update_data = [{'role': 'system', 'content': Profile_check}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=update_data, temperature=0, max_tokens=4000)
-    User_profile_updated = response['choices'][0]['message']['content']
+    response = chat_with_ollama(messages=update_data)#openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=update_data, temperature=0, max_tokens=4000)
+    User_profile_updated = response#['message']['content']
 
     # Calculate the number of differences between the original data and the updated data
     diff = difflib.ndiff(original_data, User_profile_updated)
