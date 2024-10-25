@@ -3,9 +3,7 @@ import pandas as pd
 import time
 import streamlit as st
 import openai
-import ollama
 from modules.utils import chromadb_path, Chatlog_loc, Journal_loc, Journaler, open_file
-from modules.chatbot import chat_with_ollama
 
 def append_to_chatlog(message):
     # Check if the chatlog file exists, create it if it doesn't
@@ -72,8 +70,8 @@ def write_journal():
         # st.write(Prev_Chatlog)
         Journal = [{'role': 'system', 'content': Journal_writer}, {'role': 'user', 'content': Prev_Chatlog}]
         # st.write(Journal)
-        response = chat_with_ollama(messages=Journal)
-        text = response#['message']['content']
+        response = openai.ChatCompletion.create(model="gpt-3.5-turbo-0125", messages=Journal, temperature=0, max_tokens=4000)
+        text = response['choices'][0]['message']['content']
         # st.write(Update_Journal)
         Update_Journal = text
         
