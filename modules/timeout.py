@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-from modules.profile import update_profile, update_matrix
-from modules.journal import write_journal, process_DB_Entries
+from modules.profile_OLL import update_profile, update_matrix
+from modules.journal_OLL import write_journal, process_DB_Entries
 from modules.faiss import init_FAISS
 import streamlit as st
 
