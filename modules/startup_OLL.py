@@ -2,8 +2,8 @@ import os
 from datetime import datetime
 import streamlit as st
 import time
-from modules.profile import update_profile, update_matrix
-from modules.journal import write_journal, process_DB_Entries
+from modules.profile_OLL import update_profile, update_matrix
+from modules.journal_OLL import write_journal, process_DB_Entries
 from modules.faiss import init_FAISS
 from modules.journal import chromadb_path
 from modules.utils import Chatlog_loc, profile_template, matrix_template, chromadb_path, persona_content, User_pro

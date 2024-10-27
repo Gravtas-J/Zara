@@ -4,7 +4,7 @@ import time
 import streamlit as st
 import os
 from modules.chatbot import chatbotGPT4, ant_opus
-from modules.utils import open_file, backup_userprofile, User_matrix, userprofile, backup_user_matrix,  Profile_check, Chatlog_loc
+from modules.utils import open_file, backup_userprofile, User_matrix, userprofile, backup_user_matrix,  Profile_check, Chatlog_loc, Matrix_writer
 
 def load_user_messages_only(file_location):
     with open(file_location, "r") as file:
@@ -88,53 +88,15 @@ def update_profile():
     # time.sleep(2)
     # completed_message.empty()
 
-# def update_matrix():
-#     print(f"Updating Matrix")
-#     # startup_message = st.empty()
-#     # startup_message.info('Updating User Matrix', icon=None)
-#     start_time = time.time()  # Record the start time
-#     with open(User_matrix, "r") as file:
-#         original_data = file.read()
-#     Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
-#     Matrix_updated, tokens_risk = chatbotGPT4(Update_Person_matrix)   
-#     # Calculate the number of differences between the original data and the updated data
-#     diff = difflib.ndiff(original_data, Matrix_updated)
-#     num_differences = len([d for d in diff if d[0] != ' '])
-
-#     # Check if the number of differences exceeds 200
-#     if num_differences > 200:
-#         # Restore the original data from a backup file
-#         with open(backup_user_matrix, "r") as backup_file:
-#             restored_data = backup_file.read()
-        
-#         # Save the restored data back to the user profile file
-#         with open(User_matrix, "w") as file:
-#             file.write(restored_data)
-#     else:
-#         # Save the updated data to the user profile file
-#         with open(User_matrix, "w") as file:
-#             file.write(Matrix_updated)
-#     end_time = time.time()  # Record the end time
-#     duration = end_time - start_time  # Calculate the duration
-#     # startup_message.empty()
-#     # completed_message = st.empty()
-#     # completed_message.info(f'Matrix updated in {duration:.2f} seconds', icon=None)
-#     # time.sleep(2)
-#     # completed_message.empty()
-#     print(f'Matrix updated in {duration:.2f} seconds')
-
 def update_matrix():
     print(f"Updating Matrix")
     # startup_message = st.empty()
     # startup_message.info('Updating User Matrix', icon=None)
     start_time = time.time()  # Record the start time
-    # st.session_state["chat_log"] = load_user_messages_only(Chatlog_loc)
-    chatlog = load_user_messages_only(Chatlog_loc)
-    print(chatlog)
     with open(User_matrix, "r") as file:
         original_data = file.read()
-    Update_Person_matrix = [{'role': 'user', 'content': chatlog}]
-    Matrix_updated = ant_opus(conversation=Update_Person_matrix)   
+    Update_Person_matrix = [{'role': 'system', 'content': Matrix_writer}, {'role': 'user', 'content': st.session_state.get('chat_log', '')}]
+    Matrix_updated, tokens_risk = chatbotGPT4(Update_Person_matrix)   
     # Calculate the number of differences between the original data and the updated data
     diff = difflib.ndiff(original_data, Matrix_updated)
     num_differences = len([d for d in diff if d[0] != ' '])
@@ -152,7 +114,6 @@ def update_matrix():
         # Save the updated data to the user profile file
         with open(User_matrix, "w") as file:
             file.write(Matrix_updated)
-    backup_matrix()
     end_time = time.time()  # Record the end time
     duration = end_time - start_time  # Calculate the duration
     # startup_message.empty()
@@ -161,3 +122,42 @@ def update_matrix():
     # time.sleep(2)
     # completed_message.empty()
     print(f'Matrix updated in {duration:.2f} seconds')
+
+# def update_matrix():
+#     print(f"Updating Matrix")
+#     # startup_message = st.empty()
+#     # startup_message.info('Updating User Matrix', icon=None)
+#     start_time = time.time()  # Record the start time
+#     # st.session_state["chat_log"] = load_user_messages_only(Chatlog_loc)
+#     chatlog = load_user_messages_only(Chatlog_loc)
+#     print(chatlog)
+#     with open(User_matrix, "r") as file:
+#         original_data = file.read()
+#     Update_Person_matrix = [{'role': 'user', 'content': chatlog}]
+#     Matrix_updated = ant_opus(conversation=Update_Person_matrix)   
+#     # Calculate the number of differences between the original data and the updated data
+#     diff = difflib.ndiff(original_data, Matrix_updated)
+#     num_differences = len([d for d in diff if d[0] != ' '])
+
+#     # Check if the number of differences exceeds 200
+#     if num_differences > 200:
+#         # Restore the original data from a backup file
+#         with open(backup_user_matrix, "r") as backup_file:
+#             restored_data = backup_file.read()
+        
+#         # Save the restored data back to the user profile file
+#         with open(User_matrix, "w") as file:
+#             file.write(restored_data)
+#     else:
+#         # Save the updated data to the user profile file
+#         with open(User_matrix, "w") as file:
+#             file.write(Matrix_updated)
+#     backup_matrix()
+#     end_time = time.time()  # Record the end time
+#     duration = end_time - start_time  # Calculate the duration
+#     # startup_message.empty()
+#     # completed_message = st.empty()
+#     # completed_message.info(f'Matrix updated in {duration:.2f} seconds', icon=None)
+#     # time.sleep(2)
+#     # completed_message.empty()
+#     print(f'Matrix updated in {duration:.2f} seconds')

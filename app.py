@@ -81,7 +81,6 @@ def main():
     #============================CHATBOT FUNCTION =====================================#
     if prompt:
         st.session_state['has_timeout_run'] = "no"
-        # with col3:
         with st.chat_message("user",):
             st.write(prompt)
         time_right_now = "current time:"+"\n"+datetime.now().strftime("%Y-%m-%d %H:%M:%S")

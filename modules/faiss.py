@@ -3,7 +3,7 @@ import numpy as np
 import time
 from sentence_transformers import SentenceTransformer, util
 import streamlit as st
-from modules.journal import fetch_journal_entries
+from modules.journal_OLL import fetch_journal_entries
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
